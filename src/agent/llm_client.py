@@ -85,3 +85,4 @@ class DiligenceLLMClient:
             pass
 
         return None
+
