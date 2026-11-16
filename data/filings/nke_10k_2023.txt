@@ -1,0 +1,34 @@
+[NKE:S001] NIKE, Inc. is the world's leading designer, marketer, and distributor of authentic athletic footwear, apparel, equipment, and accessories.
+[NKE:S002] Fiscal year 2023 ended on May 31, 2023.
+[NKE:S003] Total NIKE, Inc. revenues rose 10% to $51,217 million in fiscal 2023 compared to $46,710 million in fiscal 2022.
+[NKE:S004] On a currency-neutral basis, revenues grew 16% in fiscal 2023, reflecting strong consumer demand across all geographies.
+[NKE:S005] Gross margin contracted 250 basis points to 43.5% in fiscal 2023 from 46.0% in fiscal 2022.
+[NKE:S006] The 250 basis point decrease in gross margin was primarily driven by higher markdowns to liquidate excess inventory, unfavorable net foreign currency exchange rates, and elevated freight and logistics costs, partially offset by strategic pricing actions.
+[NKE:S007] Operating overhead expense increased 12% to $12,317 million, primarily due to wage-related expenses and strategic technology investments.
+[NKE:S008] Demand creation expense was $4,060 million, an increase of 5% compared to $3,850 million in fiscal 2022, driven by advertising and sports marketing investments.
+[NKE:S009] Net income decreased 16% to $5,070 million in fiscal 2023 compared to $6,046 million in fiscal 2022.
+[NKE:S010] Diluted earnings per share decreased 14% to $3.23 in fiscal 2023 compared to $3.75 in fiscal 2022.
+[NKE:S011] NIKE Direct revenues were $21,308 million, up 14% on a reported basis and 20% on a currency-neutral basis, led by NIKE-owned digital growth of 24%.
+[NKE:S012] Wholesale revenues were $27,400 million, an increase of 7% on a reported basis and 14% on a currency-neutral basis.
+[NKE:S013] Footwear revenues were $33,136 million, up 12% on a reported basis and 18% on a currency-neutral basis.
+[NKE:S014] Apparel revenues were $13,945 million, up 3% on a reported basis and 8% on a currency-neutral basis.
+[NKE:S015] Equipment revenues were $1,718 million, an increase of 6% (12% currency-neutral).
+[NKE:S016] North America revenues increased 9% (8% currency-neutral) to $21,608 million.
+[NKE:S017] Europe, Middle East & Africa (EMEA) revenues increased 8% (16% currency-neutral) to $13,418 million.
+[NKE:S018] Greater China revenues declined 4% on a reported basis (increased 4% currency-neutral) to $7,248 million, heavily impacted by COVID-19 lockdowns in the first half of the year.
+[NKE:S019] Asia Pacific & Latin America (APLA) revenues increased 8% (17% currency-neutral) to $6,431 million.
+[NKE:S020] Converse brand revenues were $2,427 million, an increase of 3% on a reported basis and 8% currency-neutral.
+[NKE:S021] During fiscal 2023, our largest customer, Foot Locker, Inc., accounted for approximately 6% of total NIKE Brand revenues.
+[NKE:S022] No single customer accounted for 10% or more of consolidated net revenues in fiscal 2023, 2022, or 2021.
+[NKE:S023] Inventories were $8,454 million as of May 31, 2023, flat compared to $8,420 million as of May 31, 2022, as supply chain lead times normalized.
+[NKE:S024] Cash provided by operations was $5,841 million in fiscal 2023, compared to $5,188 million in fiscal 2022.
+[NKE:S025] Capital expenditures were $906 million in fiscal 2023, compared to $757 million in fiscal 2022.
+[NKE:S026] Free cash flow was $4,935 million in fiscal 2023, an increase of 11.4% from $4,431 million in fiscal 2022.
+[NKE:S027] Cash, cash equivalents, and short-term investments totaled $10,675 million as of May 31, 2023.
+[NKE:S028] Total debt was $12,141 million, including short-term borrowings and operating lease liabilities.
+[NKE:S029] Share repurchases totaled $4,778 million and dividends paid totaled $2,023 million during fiscal 2023.
+[NKE:S030] Independent contract manufacturers in Vietnam, Indonesia, and China manufactured approximately 50%, 27%, and 18% of NIKE brand footwear, respectively.
+[NKE:S031] Independent contract manufacturers in Vietnam, China, and Cambodia manufactured approximately 28%, 16%, and 16% of NIKE brand apparel, respectively.
+[NKE:S032] The effective tax rate was 18.2% in fiscal 2023, compared to 9.1% in fiscal 2022, primarily due to lower benefits from stock-based compensation and discrete items.
+[NKE:S033] Worldwide employee headcount was approximately 83,700 as of May 31, 2023.
+[NKE:S034] Total endorsements and promotional commitments amounted to $7,842 million as of May 31, 2023.

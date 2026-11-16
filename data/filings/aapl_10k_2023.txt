@@ -1,0 +1,35 @@
+[AAPL:S001] Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories, and sells a variety of related services.
+[AAPL:S002] The Company's fiscal year is the 52- or 53-week period that ends on the last Saturday of September.
+[AAPL:S003] Total net sales were $383,285 million in fiscal 2023, a decrease of 2.8% compared to $394,328 million in fiscal 2022.
+[AAPL:S004] Total gross margin was $169,148 million, or 44.1% of net sales, in fiscal 2023, compared to $170,782 million, or 43.3% of net sales, in fiscal 2022.
+[AAPL:S005] Operating income was $114,301 million in fiscal 2023, down 4.3% from $119,437 million in fiscal 2022.
+[AAPL:S006] Net income was $96,995 million in fiscal 2023, compared to $99,803 million in fiscal 2022.
+[AAPL:S007] Diluted earnings per share increased to $6.13 in fiscal 2023 from $6.11 in fiscal 2022, due to share repurchases reducing outstanding shares.
+[AAPL:S008] Products net sales were $298,085 million in fiscal 2023, a decrease of 5.7% from $316,199 million in fiscal 2022.
+[AAPL:S009] iPhone net sales were $200,583 million in fiscal 2023, down 2.4% compared to $205,489 million in fiscal 2022.
+[AAPL:S010] Mac net sales were $29,357 million in fiscal 2023, a decrease of 26.9% compared to $40,177 million in fiscal 2022, due to challenging market conditions and comparison to prior year M2 launches.
+[AAPL:S011] iPad net sales were $28,300 million in fiscal 2023, down 3.4% compared to $29,292 million in fiscal 2022.
+[AAPL:S012] Wearables, Home and Accessories net sales were $39,845 million in fiscal 2023, down 3.4% compared to $41,241 million in fiscal 2022.
+[AAPL:S013] Services net sales were $85,200 million in fiscal 2023, an increase of 9.1% compared to $78,129 million in fiscal 2022, reaching an all-time record.
+[AAPL:S014] Services gross margin was 70.8% in fiscal 2023 compared to 71.7% in fiscal 2022, a decline of 90 basis points due to higher content costs.
+[AAPL:S015] Products gross margin expanded to 36.5% in fiscal 2023 from 36.3% in fiscal 2022, driven by favorable product mix and lower component costs, partially offset by foreign exchange weakness.
+[AAPL:S016] Research and development expense was $29,915 million, or 7.8% of net sales, compared to $26,251 million, or 6.7% of net sales, in fiscal 2022.
+[AAPL:S017] Selling, general, and administrative expense was $24,932 million, or 6.5% of net sales, compared to $25,094 million in fiscal 2022.
+[AAPL:S018] Americas net sales were $162,560 million in fiscal 2023, down 4.2% from $169,658 million in fiscal 2022.
+[AAPL:S019] Europe net sales were $94,294 million in fiscal 2023, slightly down from $95,118 million in fiscal 2022.
+[AAPL:S020] Greater China net sales were $72,559 million in fiscal 2023, down 2.2% from $74,202 million in fiscal 2022.
+[AAPL:S021] Japan net sales were $24,257 million in fiscal 2023, down 6.6% from $25,977 million in fiscal 2022.
+[AAPL:S022] Rest of Asia Pacific net sales were $29,615 million in fiscal 2023, up 0.8% from $29,372 million in fiscal 2022.
+[AAPL:S023] No single customer accounted for more than 10% of net sales in fiscal 2023, 2022, or 2021.
+[AAPL:S024] Cellular network carriers and wholesalers distribute significant volumes, but none represented 10% or more of net sales.
+[AAPL:S025] Substantially all manufacturing is performed by outsourced partners located primarily in China, India, and Vietnam.
+[AAPL:S026] Operating cash flow was $110,543 million in fiscal 2023, compared to $122,151 million in fiscal 2022.
+[AAPL:S027] Capital expenditures for property, plant, and equipment were $9,959 million in fiscal 2023, compared to $10,708 million in fiscal 2022.
+[AAPL:S028] Free cash flow was $100,584 million in fiscal 2023 compared to $111,443 million in fiscal 2022.
+[AAPL:S029] Total cash, cash equivalents, and marketable securities were $162,149 million as of September 30, 2023.
+[AAPL:S030] Total term debt was $105,963 million, and commercial paper outstanding was $5,985 million as of September 30, 2023.
+[AAPL:S031] During fiscal 2023, Apple repurchased $77,550 million of common stock and paid $15,025 million in cash dividends.
+[AAPL:S032] Foreign exchange headwinds negatively affected total net sales by approximately 370 basis points in fiscal 2023.
+[AAPL:S033] The Company's effective tax rate was 14.7% in fiscal 2023, compared to 16.2% in fiscal 2022.
+[AAPL:S034] Total number of full-time equivalent employees was approximately 161,000 as of September 30, 2023.
+[AAPL:S035] Manufacturing purchase obligations and other commitments totaled $41,403 million as of September 30, 2023.
