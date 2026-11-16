@@ -1,7 +1,7 @@
 """
 End-to-end multi-seed experiment pipeline:
 1. Loads filings and question suite.
-2. Calibrates DiligenceScorer against human judgments.
+2. Calibrates DiligenceScorer against human judgments (Nike strictly isolated).
 3. Evaluates agents across multiple seeds and feedback rounds (0 to 3).
 4. Tracks held-out performance, unseen company (NKE) performance, and noise rejection.
 5. Runs the gaming/failure mode ablation (Naive Learner without verification gate).
@@ -72,6 +72,7 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
     calibration_res = scorer.calibrate_with_human_judgments(HUMAN_CALIBRATION_SAMPLES)
     print(f"Human-Scorer Pearson Correlation: {calibration_res['pearson_correlation']:.4f}")
     print(f"Mean Absolute Error (MAE):       {calibration_res['mean_absolute_error']:.4f}")
+    print(f"Calibration Samples (Nike excluded): {calibration_res['n_samples']}")
     print("Calibration successful!\n")
 
     hardened_held_out = {r: [] for r in range(rounds + 1)}
@@ -81,7 +82,8 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
     naive_held_out = {r: [] for r in range(rounds + 1)}
     naive_unseen = {r: [] for r in range(rounds + 1)}
 
-    total_cost = 0.0
+    total_actual_cost = 0.0
+    total_simulated_cost = 0.0
 
     print("==================================================")
     print(f"STEP 2: Running Multi-Seed Experiments ({len(seeds)} seeds, {rounds} rounds, {noise_rate*100:.0f}% noise)...")
@@ -89,7 +91,8 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
 
     for i, seed in enumerate(seeds, 1):
         print(f"  [Progress {i}/{len(seeds)}] Evaluating Seed {seed} across Rounds 0 to {rounds}...")
-        # A. Hardened Agent Run (With Verification Gate)
+        
+        # A. Hardened Agent Run (With Verification Gate & Dynamic Playbook)
         playbook_hardened = DiligencePlaybook(verifier, naive_mode=False)
         agent_hardened = DiligenceAgent(filings, verifier, playbook=playbook_hardened, naive_mode=False)
         sim_hardened = FeedbackSimulator(noise_rate=noise_rate, seed=seed)
@@ -106,7 +109,7 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
             
             for fb in feedback_batch:
                 q_obj = fb["question"]
-                playbook_hardened.learn_from_feedback(q_obj, fb["prediction"], fb, filings[q_obj["company"]])
+                playbook_hardened.learn_from_feedback(q_obj, fb["prediction"], fb)
 
             score_ho = run_evaluation_split(agent_hardened, scorer, held_out_qs)
             score_un = run_evaluation_split(agent_hardened, scorer, unseen_qs)
@@ -114,9 +117,10 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
             hardened_unseen[r].append(score_un)
 
         hardened_rejected_noise.append(playbook_hardened.rejected_feedback_count)
-        total_cost += agent_hardened.call_cost
+        total_actual_cost += agent_hardened.actual_api_cost_usd
+        total_simulated_cost += agent_hardened.simulated_production_cost_usd
 
-        # B. Naive Agent Run (No Gate / Gets Poisoned by Bad Feedback)
+        # B. Naive Agent Run (No Gate / Absorbs Poisoned Feedback)
         playbook_naive = DiligencePlaybook(verifier, naive_mode=True)
         agent_naive = DiligenceAgent(filings, verifier, playbook=playbook_naive, naive_mode=True)
         sim_naive = FeedbackSimulator(noise_rate=noise_rate, seed=seed)
@@ -131,17 +135,16 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
             feedback_batch = sim_naive.generate_feedback_batch(train_qs, preds, batch_size=5)
             for fb in feedback_batch:
                 q_obj = fb["question"]
-                playbook_naive.learn_from_feedback(q_obj, fb["prediction"], fb, filings[q_obj["company"]])
+                playbook_naive.learn_from_feedback(q_obj, fb["prediction"], fb)
 
             score_ho_n = run_evaluation_split(agent_naive, scorer, held_out_qs)
             score_un_n = run_evaluation_split(agent_naive, scorer, unseen_qs)
             naive_held_out[r].append(score_ho_n)
             naive_unseen[r].append(score_un_n)
 
-        total_cost += agent_naive.call_cost
-
     print("\nExperiment runs complete!")
-    print(f"Total model call expenditure tracked: ${total_cost:.4f} USD")
+    print(f"Actual model call expenditure: ${total_actual_cost:.4f} USD (Offline deterministic mode: $0.00)")
+    print(f"Simulated production API cost benchmark: ${total_simulated_cost:.4f} USD ($15.00/10k queries)")
     print(f"Average noisy feedback items rejected per run by Hardened Agent: {np.mean(hardened_rejected_noise):.1f}")
 
     rounds_axis = list(range(rounds + 1))
@@ -203,18 +206,19 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
     # Save metrics JSON
     metrics = {
         "calibration": calibration_res,
-        "model_expenditure_usd": round(total_cost, 4),
+        "actual_api_expenditure_usd": round(total_actual_cost, 4),
+        "simulated_production_cost_usd": round(total_simulated_cost, 4),
         "hardened": {
-            "held_out_mean": h_ho_mean,
-            "held_out_std": h_ho_std,
-            "unseen_mean": h_un_mean,
-            "unseen_std": h_un_std
+            "held_out_mean": [round(x, 4) for x in h_ho_mean],
+            "held_out_std": [round(x, 4) for x in h_ho_std],
+            "unseen_mean": [round(x, 4) for x in h_un_mean],
+            "unseen_std": [round(x, 4) for x in h_un_std]
         },
         "naive": {
-            "held_out_mean": n_ho_mean,
-            "held_out_std": n_ho_std,
-            "unseen_mean": n_un_mean,
-            "unseen_std": n_un_std
+            "held_out_mean": [round(x, 4) for x in n_ho_mean],
+            "held_out_std": [round(x, 4) for x in n_ho_std],
+            "unseen_mean": [round(x, 4) for x in n_un_mean],
+            "unseen_std": [round(x, 4) for x in n_un_std]
         }
     }
     metrics_path = os.path.join(RESULTS_DIR, "metrics.json")
@@ -226,4 +230,3 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
 
 if __name__ == "__main__":
     run_experiment_suite()
-

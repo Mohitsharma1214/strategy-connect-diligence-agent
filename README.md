@@ -15,7 +15,7 @@ Run the complete pipeline, scorer calibration, multi-seed feedback experiments, 
 *(Alternatively: `.venv/bin/python main.py`)*
 
 ### 🎮 Interactive Terminal Demo
-To interact with the agent directly, test queries on Microsoft, Apple, or the unseen Nike, and test the Verification Gate in real time:
+To interact with the agent directly, ask arbitrary custom diligence questions on Microsoft, Apple, or the unseen Nike, and test the Verification Gate in real time:
 
 ```bash
 python demo.py
@@ -23,27 +23,27 @@ python demo.py
 
 ---
 
-## 📊 Summary of Experimental Results
+## 📊 Summary of Verified Experimental Results
 
 All experiments were evaluated across **5 random seeds** (`42`, `123`, `456`, `789`, `999`) over **3 rounds of feedback** (5 corrections per round, with **20% noisy/erroneous corrections** injected).
 
-*Note: Gains on the training set are strictly disregarded. Only held-out questions and the unseen company are reported.*
+*Note: Gains on the training set are strictly disregarded. Only held-out questions and the unseen company are reported. Nike data is strictly isolated until evaluation.*
 
 | Feedback Round | Held-Out Questions (MSFT & AAPL) | Unseen Company (Nike NKE) | Noisy Feedback Items Rejected |
 | :---: | :---: | :---: | :---: |
-| **Round 0 (Baseline)** | 0.675 ± 0.000 | 0.634 ± 0.000 | 0 |
-| **Round 1** | 0.699 ± 0.026 | 0.672 ± 0.036 | ~1.1 |
-| **Round 2** | 0.699 ± 0.026 | 0.680 ± 0.031 | ~2.3 |
-| **Round 3** | **0.704 ± 0.023** | **0.692 ± 0.052** | **3.4** |
+| **Round 0 (Baseline)** | 0.745 ± 0.000 | 0.713 ± 0.000 | 0 |
+| **Round 1** | 0.768 ± 0.028 | 0.753 ± 0.034 | ~1.8 |
+| **Round 2** | 0.786 ± 0.028 | 0.778 ± 0.022 | ~3.6 |
+| **Round 3** | **0.786 ± 0.028** | **0.787 ± 0.032** | **5.6** |
 
-- **Human Scorer Agreement**: Calibrated against expert diligence labels yielding **$r = 0.8950$ Pearson correlation** (MAE: 0.1226).
-- **Total Model Call Cost**: **\$2.22 USD** across all multi-seed runs.
+- **Human Scorer Agreement**: Calibrated against human expert diligence labels (Nike strictly excluded from calibration) yielding **$r = 0.9136$ Pearson correlation** (MAE: 0.1168, $N=12$).
+- **Model Call Expenditure**: **\$0.0000 USD** actual expenditure (offline deterministic execution mode); **\$1.1100 USD** simulated production equivalent (\$15.00 / 10,000 queries).
 - **Runtime**: **< 5 seconds** on a standard laptop.
 
 Generated plots are saved in `results/plots/`:
 1. `results/plots/quality_vs_feedback_rounds.png`: Held-out and Unseen Company learning curves with error bars.
 2. `results/plots/gaming_failure_comparison.png`: Comparison between the Hardened Agent and Naive Agent.
-3. `results/plots/loophole_gaming_demonstration.png`: Demonstration of the citation stuffing exploit and how the precision penalty closed it.
+3. `results/plots/loophole_gaming_demonstration.png`: Demonstration of the citation stuffing exploit and how semantic claim-support penalties closed it.
 
 ---
 
@@ -60,7 +60,7 @@ Generated plots are saved in `results/plots/`:
                          │
                          ▼
         ┌──────────────────────────────────┐
-        │  Reflective Playbook Distiller   │  <── Category Heuristics
+        │  Dynamic Playbook Distiller      │  <── Feedback-Derived Heuristics
         └────────────────┬─────────────────┘
                          │
                          ▼
@@ -74,7 +74,7 @@ Generated plots are saved in `results/plots/`:
 2. **The 20% Noise Challenge**:
    Human analyst feedback in private equity / venture deals is scarce and often contains mistakes (~20% erroneous numbers or stale memories). Our **Source Verification Gate** cross-references analyst assertions against the primary filing before accepting any lesson.
 3. **Playbook Memory (Episodic Strategy Distillation)**:
-   Instead of destructive full fine-tuning on ~20 examples, the agent distills actionable diligence heuristics (e.g., negative assurance checks on customer concentration, constant-currency decomposition for gross margin drivers).
+   Instead of destructive full fine-tuning on ~20 examples, the agent dynamically distills actionable diligence heuristics from analyst corrections (e.g., negative assurance checks on customer concentration, constant-currency decomposition for gross margin drivers).
 
 ---
 
@@ -96,12 +96,12 @@ Generated plots are saved in `results/plots/`:
 │   │   ├── diligence_agent.py    # Diligence Agent with Playbook integration
 │   │   └── llm_client.py         # Live LLM proxy & offline fallback client
 │   └── evaluation/
-│       ├── calibration_data.py   # Human expert benchmark data
-│       ├── scorer.py             # Calibrated composite diligence scorer
+│       ├── calibration_data.py   # Human expert benchmark data (Nike strictly isolated)
+│       ├── scorer.py             # Calibrated composite scorer with claim-to-citation check
 │       ├── run_experiments.py    # Multi-seed experiment runner & plot generator
 │       └── run_gaming.py         # Loophole / gaming demonstration
 ├── results/
-│   ├── metrics.json              # Raw experiment statistics and error bounds
+│   ├── metrics.json              # Reconciled experiment statistics and error bounds
 │   └── plots/                    # High-resolution publication plots
 ├── main.py                       # Python execution pipeline
 ├── demo.py                       # Interactive CLI diligence demo
@@ -123,4 +123,3 @@ For the complete 2-page write-up covering:
 - Complete preparation for the 60-minute follow-up call
 
 See **[WRITEUP.md](WRITEUP.md)**.
-

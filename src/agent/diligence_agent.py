@@ -1,11 +1,10 @@
 """
 Diligence Agent implementation.
 Combines:
-- Live LLM synthesis (via portfolio Groq/Supabase proxy or OpenAI)
 - Sentence-level retrieval over structured 10-Ks
 - Playbook guideline integration
 - Answer generation with strict [DOC:Sxxx] sentence citations
-- Offline fallback for 100% reproducible execution
+- Exact expenditure accounting (0.00 for offline runs, real token cost for live calls)
 """
 
 import os
@@ -27,9 +26,11 @@ class DiligenceAgent:
         self.filings = filings
         self.verifier = verifier
         self.playbook = playbook or DiligencePlaybook(verifier, naive_mode=naive_mode)
-        self.llm_client = llm_client or DiligenceLLMClient(use_live_llm=True)
+        self.llm_client = llm_client
         self.naive_mode = naive_mode
-        self.call_cost = 0.0
+        self.total_queries_executed = 0
+        self.actual_api_cost_usd = 0.0
+        self.simulated_production_cost_usd = 0.0
 
     def answer_question(self, question: Dict) -> Dict:
         """
@@ -40,7 +41,9 @@ class DiligenceAgent:
         q_text = question["question"]
         category = question.get("category", "General")
         
-        self.call_cost += 0.0015
+        self.total_queries_executed += 1
+        # Simulated production cost for whiteboard scale analysis ($15/10k queries)
+        self.simulated_production_cost_usd += 0.0015
 
         # 1. Retrieve relevant guidelines from the Playbook
         guidelines = self.playbook.get_relevant_rules(category)
@@ -85,7 +88,7 @@ class DiligenceAgent:
         scored_sentences.sort(key=lambda x: x[0], reverse=True)
         top_candidates = [{"tag": s[1], "text": s[2]} for s in scored_sentences[:5]]
 
-        # 5. Try live LLM call if enabled
+        # 5. Try live LLM call if configured and active
         if self.llm_client and self.llm_client.use_live_llm and guidelines:
             llm_response = self.llm_client.generate_diligence_answer(
                 company=company,
@@ -93,15 +96,15 @@ class DiligenceAgent:
                 retrieved_sentences=top_candidates,
                 playbook_guidelines=guidelines
             )
-            # Verify live LLM output has valid citations
             if llm_response and self.verifier.extract_citations(llm_response):
+                self.actual_api_cost_usd += self.llm_client.last_call_cost
                 return {
                     "answer": llm_response,
                     "guidelines_applied": guidelines,
                     "mode": "live_llm"
                 }
 
-        # 6. Deterministic synthesis (offline / fallback mode)
+        # 6. Deterministic offline engine (0.00 actual API cost)
         answer = self._synthesize_answer(company, q_text, category, scored_sentences, guidelines)
 
         return {

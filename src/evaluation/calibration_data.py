@@ -1,5 +1,6 @@
 """
-Human calibration dataset.
+Human calibration dataset (Microsoft & Apple ONLY).
+Nike is strictly excluded to prevent evaluation data leakage.
 Provides pairs of (prediction, ground_truth, human_expert_score)
 to validate that the automated DiligenceScorer strongly correlates with human judgment.
 """
@@ -23,7 +24,7 @@ HUMAN_CALIBRATION_SAMPLES = [
             "ground_truth_citations": ["[MSFT:S030]"],
             "key_facts": ["No single customer accounted for more than 10% of revenue in fiscal years 2023, 2022, or 2021"]
         },
-        "human_score": 0.35 # Incomplete, misses the 10% concentration threshold
+        "human_score": 0.35 # Incomplete, misses 10% concentration threshold
     },
     {
         "prediction": "Microsoft gross margin was 69% ($146,052 million). The accounting estimate change extending server useful life from 4 to 6 years reduced depreciation by $3.7B. [MSFT:S006] [MSFT:S025] [MSFT:S026]",
@@ -76,34 +77,53 @@ HUMAN_CALIBRATION_SAMPLES = [
         "human_score": 0.10 # Evasive hedging when data exists
     },
     {
-        "prediction": "Foot Locker accounted for 6% of NIKE Brand revenues. No single customer accounted for 10% or more. [NKE:S021] [NKE:S022]",
+        "prediction": "Mac net sales dropped 26.9% to $29,357 million from $40,177 million in fiscal 2022 due to challenging market conditions. [AAPL:S010]",
         "ground_truth": {
-            "id": "NKE_UN_01",
-            "company": "NKE",
-            "ground_truth_citations": ["[NKE:S021]", "[NKE:S022]"],
-            "key_facts": ["Foot Locker accounted for approximately 6% of total NIKE Brand revenues", "No single customer accounted for 10% or more of consolidated revenues"]
+            "id": "AAPL_TR_03",
+            "company": "AAPL",
+            "ground_truth_citations": ["[AAPL:S010]"],
+            "key_facts": ["decreased 26.9% to $29,357 million", "challenging market conditions", "comparison to prior year M2 launches"]
         },
-        "human_score": 0.95 # Accurate on unseen company
+        "human_score": 0.90
     },
     {
-        "prediction": "NIKE gross margin contracted 250 bps to 43.5% due to markdowns on excess inventory and freight costs. [NKE:S005] [NKE:S006]",
+        "prediction": "Apple outsourced manufacturing primarily in China, India, and Vietnam. [AAPL:S025]",
         "ground_truth": {
-            "id": "NKE_UN_02",
-            "company": "NKE",
-            "ground_truth_citations": ["[NKE:S005]", "[NKE:S006]"],
-            "key_facts": ["contracted 250 basis points to 43.5%", "higher markdowns to liquidate excess inventory", "elevated freight and logistics costs"]
+            "id": "AAPL_TR_05",
+            "company": "AAPL",
+            "ground_truth_citations": ["[AAPL:S025]"],
+            "key_facts": ["outsourced partners", "located primarily in China, India, and Vietnam"]
         },
         "human_score": 0.95
     },
     {
-        "prediction": "Inventories were flat at $8,454 million. [NKE:S023]",
+        "prediction": "Capital expenditures were $31,900 million primarily to support cloud infrastructure. [MSFT:S028]",
         "ground_truth": {
-            "id": "NKE_UN_04",
-            "company": "NKE",
-            "ground_truth_citations": ["[NKE:S023]"],
-            "key_facts": ["inventories were $8,454 million", "flat compared to $8,420 million"]
+            "id": "MSFT_TR_04",
+            "company": "MSFT",
+            "ground_truth_citations": ["[MSFT:S028]"],
+            "key_facts": ["$31,900 million in capital expenditures", "compared to $23,886 million", "primarily to support cloud infrastructure demand"]
         },
-        "human_score": 0.90
+        "human_score": 0.85
+    },
+    {
+        "prediction": "Microsoft returned capital via buybacks and dividends. [MSFT:S001]",
+        "ground_truth": {
+            "id": "MSFT_TR_07",
+            "company": "MSFT",
+            "ground_truth_citations": ["[MSFT:S034]"],
+            "key_facts": ["$22.2 billion through share repurchases", "$19.8 billion through dividends"]
+        },
+        "human_score": 0.20 # Cites wrong sentence [MSFT:S001], lacks dollar figures
+    },
+    {
+        "prediction": "Apple repurchased $77,550 million of stock and paid $15,025 million in cash dividends. [AAPL:S031]",
+        "ground_truth": {
+            "id": "AAPL_TR_07",
+            "company": "AAPL",
+            "ground_truth_citations": ["[AAPL:S031]"],
+            "key_facts": ["repurchased $77,550 million of common stock", "paid $15,025 million in cash dividends"]
+        },
+        "human_score": 1.00
     }
 ]
-

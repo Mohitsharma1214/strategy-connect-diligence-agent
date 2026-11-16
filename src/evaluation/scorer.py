@@ -1,9 +1,10 @@
 """
 Scorer for diligence answers and human agreement calibration.
 Evaluates:
-- Citation Precision & Grounding (35%)
-- Factuality & Key Fact Coverage (40%)
-- Conciseness & Anti-Gaming Penalty (25%)
+- Factuality & Key Fact Coverage (35%)
+- Citation Recall & Precision (20%)
+- Semantic Claim-to-Citation Grounding Support (25%)
+- Conciseness & Anti-Gaming Penalty (20%)
 """
 
 import re
@@ -17,34 +18,61 @@ class DiligenceScorer:
 
     def score_answer(self, prediction: str, ground_truth: Dict) -> Dict:
         """
-        Scores an agent's answer against the reference answer and ground truth citations.
-        Returns a dictionary with subscores and a composite score between 0.0 and 1.0.
+        Scores an agent's answer against reference answers, ground truth citations,
+        and verifies that each claim is semantically grounded by its cited source sentence.
         """
-        # 1. Citation Grounding & Precision
         comp = ground_truth.get("company")
         cit_eval = self.verifier.verify_citations(prediction, expected_company=comp)
         
         pred_citations = set(cit_eval["valid_citations"])
         gt_citations = set(ground_truth.get("ground_truth_citations", []))
         
-        # Citation recall: how many of the needed citations were retrieved?
+        # 1. Citation Recall & Precision
         cit_recall = len(pred_citations.intersection(gt_citations)) / len(gt_citations) if gt_citations else 1.0
-        
-        # Citation precision: are the cited sentences actually valid?
         cit_precision = cit_eval["precision"]
-        
-        # Citation score combines precision and recall
-        citation_score = 0.5 * cit_precision + 0.5 * cit_recall
+        base_citation_score = (0.5 * cit_precision) + (0.5 * cit_recall)
         if not cit_eval["valid"]:
-            citation_score *= 0.3
+            base_citation_score *= 0.3
 
-        # 2. Factuality & Key Fact Coverage
+        # 2. Semantic Claim-to-Citation Grounding Support
+        # Verifies that each citation actually supports the claim it is attached to (closes the loophole!)
+        supported_cits = 0
+        claim_support_precision = 0.0
+        
+        if pred_citations:
+            for cit in pred_citations:
+                source_sentence = self.verifier.sentence_index.get(cit, "").lower()
+                # Find the sentence clause containing or directly preceding this citation
+                pattern = rf"([^.!?\n]*?{re.escape(cit)})"
+                matches = re.findall(pattern, prediction)
+                claim_clause = matches[0] if matches else prediction
+                
+                # Extract key numbers, percentages, and entities from that claim clause
+                claim_clean = re.sub(r"\[[A-Z]+:S\d+\]", "", claim_clause)
+                claim_numbers = re.findall(r"(\$?\d+(?:\.\d+)?%?)", claim_clean)
+                claim_entities = [w for w in re.findall(r"\w+", claim_clean.lower()) if len(w) > 4]
+                
+                # Check support: numbers must match source, or major entities must overlap
+                numbers_supported = True
+                if claim_numbers:
+                    numbers_supported = any(num.lower().replace("$", "").replace("%", "") in source_sentence for num in claim_numbers)
+                
+                entities_supported = True
+                if claim_entities:
+                    matched_ent = sum(1 for e in claim_entities if e in source_sentence)
+                    entities_supported = (matched_ent / len(claim_entities)) >= 0.35
+                
+                if numbers_supported and entities_supported:
+                    supported_cits += 1
+            
+            claim_support_precision = supported_cits / len(pred_citations)
+
+        # 3. Factuality & Key Fact Coverage
         key_facts = ground_truth.get("key_facts", [])
         facts_found = 0
         pred_lower = prediction.lower()
         
         for kf in key_facts:
-            # Extract numerical and factual tokens
             kf_tokens = re.findall(r"(\$?\d+(?:\.\d+)?%?|[a-z0-9]+)", kf.lower())
             essential_tokens = [t for t in kf_tokens if len(t) > 2 or any(c.isdigit() for c in t)]
             if not essential_tokens:
@@ -55,26 +83,35 @@ class DiligenceScorer:
                 
         fact_recall = facts_found / len(key_facts) if key_facts else 1.0
 
-        # 3. Conciseness & Anti-Gaming Penalty
+        # 4. Conciseness & Anti-Gaming Penalty
         gaming_penalty = 0.0
         if "not available" in pred_lower or "does not provide" in pred_lower or "cannot be determined" in pred_lower:
             if fact_recall < 0.5:
-                # Evasive answer penalty
                 gaming_penalty += 0.35
         
         # Citation stuffing penalty (citing > 4 sentences when 1-2 suffice)
         if len(pred_citations) > 4:
-            gaming_penalty += 0.20
+            gaming_penalty += 0.25
+
+        # If claims are not supported by their cited sentences, penalize heavily
+        if pred_citations and claim_support_precision < 0.5:
+            gaming_penalty += 0.30
 
         # Composite Score (0.0 to 1.0)
-        # Weights: 40% Factuality, 35% Citations, 25% Grounding & Non-gaming
-        composite = (0.40 * fact_recall) + (0.35 * citation_score) + (0.25 * max(0.0, 1.0 - gaming_penalty))
+        # 35% Factuality, 20% Citation Presence, 25% Semantic Claim Support, 20% Non-Gaming
+        composite = (
+            (0.35 * fact_recall) +
+            (0.20 * base_citation_score) +
+            (0.25 * claim_support_precision) +
+            (0.20 * max(0.0, 1.0 - gaming_penalty))
+        )
         composite = max(0.0, min(1.0, composite))
 
         return {
             "composite_score": round(composite, 4),
             "fact_recall": round(fact_recall, 4),
-            "citation_score": round(citation_score, 4),
+            "citation_score": round(base_citation_score, 4),
+            "claim_support_precision": round(claim_support_precision, 4),
             "cit_precision": round(cit_precision, 4),
             "cit_recall": round(cit_recall, 4),
             "gaming_penalty": round(gaming_penalty, 4),
@@ -105,4 +142,3 @@ class DiligenceScorer:
             "mean_absolute_error": round(mae, 4),
             "n_samples": len(sample_pairs)
         }
-

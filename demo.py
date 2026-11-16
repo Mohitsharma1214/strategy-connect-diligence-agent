@@ -134,7 +134,7 @@ def main():
                 correction = input("Type your correction: ").strip()
                 if correction:
                     fb_dict = {"correction": correction, "is_noisy": False}
-                    learn_res = playbook.learn_from_feedback(q_payload, res["answer"], fb_dict, filings[comp])
+                    learn_res = playbook.learn_from_feedback(q_payload, res["answer"], fb_dict)
                     if learn_res["status"] == "accepted":
                         print(">>> ✅ RESULT: ACCEPTED & ADDED TO PLAYBOOK!")
                         print(f"    New Rule: {learn_res['rule']['guideline']}")
@@ -165,7 +165,7 @@ def main():
             test_q = {"id": "CUSTOM_01", "category": "Customer Concentration", "company": "MSFT"}
             print(f"\nEvaluating feedback through Verification Gate...")
             fb_dict = {"correction": fb_text, "is_noisy": False}
-            learn_res = playbook.learn_from_feedback(test_q, "", fb_dict, filings["MSFT"])
+            learn_res = playbook.learn_from_feedback(test_q, "", fb_dict)
 
             if learn_res["status"] == "accepted":
                 print(">>> ✅ RESULT: ACCEPTED & DISTILLED INTO PLAYBOOK!")
