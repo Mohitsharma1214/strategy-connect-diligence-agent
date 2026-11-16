@@ -1,15 +1,18 @@
 """
 Simulates scarce analyst feedback on deals, with configurable noise rate (default 20%).
 Includes realistic human analyst corrections and realistic noisy/incorrect corrections.
+Strictly MSFT and AAPL - zero Nike references to ensure complete unseen isolation.
 """
 
 import random
+import re
 from typing import Dict, List, Optional
 
 # Realistic noisy corrections (factual errors, hallucinated metrics, or invalid tags)
+# Strictly MSFT & AAPL to prevent any unseen company leakage in the training pool.
 NOISY_CORRECTIONS_POOL = [
     {
-        "correction": "Azure growth was actually 42% according to internal sell-side reports. [MSFT:S999]",
+        "correction": "Azure revenue grew 42% according to internal sell-side reports. [MSFT:S999]",
         "is_noisy": True,
         "reason": "Hallucinated metric and invalid citation tag [MSFT:S999]."
     },
@@ -24,14 +27,19 @@ NOISY_CORRECTIONS_POOL = [
         "reason": "Directly contradicts 10-K: Mac revenue fell 27%."
     },
     {
-        "correction": "Gross margin contracted because marketing expenses surged 40%. [NKE:S777]",
-        "is_noisy": True,
-        "reason": "Factual error: gross margin was driven by inventory markdowns and freight."
-    },
-    {
         "correction": "Cellular carriers accounted for 25% of Apple net sales in fiscal 2023. [AAPL:S024]",
         "is_noisy": True,
         "reason": "Factually incorrect: no customer accounted for 10% or more."
+    },
+    {
+        "correction": "Microsoft's server useful life was shortened to 3 years, increasing depreciation expense by $2.5B. [MSFT:S025]",
+        "is_noisy": True,
+        "reason": "Factual inversion: useful life was extended to 6 years, decreasing depreciation."
+    },
+    {
+        "correction": "Apple's Services gross margin contracted by 400 basis points due to App Store headwinds. [AAPL:S013]",
+        "is_noisy": True,
+        "reason": "Unsupported claim: Services gross margin expanded."
     }
 ]
 
@@ -86,4 +94,3 @@ class FeedbackSimulator:
             feedback_items.append(feedback)
 
         return feedback_items
-

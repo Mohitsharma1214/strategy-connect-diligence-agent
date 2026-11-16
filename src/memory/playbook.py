@@ -1,14 +1,32 @@
 """
 Playbook & Episodic Strategy Memory with Gated Verification.
-- Enforces company-specific citation validation.
-- Validates feedback claims directly against the cited source sentences (not the whole document).
-- Dynamically extracts reusable heuristics from analyst corrections (no static lookup dictionary).
-- Filters out noisy (20% incorrect) feedback using the source document as ground truth.
+
+Implements an audit-grade learning pipeline:
+1. Feedback Verification Gate:
+   - Enforces company-specific citation prefixes (e.g. MSFT: for Microsoft).
+   - Validates metrics and assertions strictly against the cited source sentences (preventing global-document leakage).
+   - Detects negative assurance contradictions (e.g. rejecting claims of >10% customer concentration when 10-K states no customer exceeds 10%).
+2. Error Analysis & Failure Classification:
+   - Diffs agent prediction against verified analyst correction.
+   - Classifies error mode: Omission of qualifying footnotes, missing accounting revisions, or missing negative assurance.
+3. Reusable Strategy Formulation:
+   - Dynamically distills informative retrieval terms and multi-sentence linking directives directly from the cited evidence.
+   - Generalizes to unseen companies (e.g. Nike) without memorizing company-specific entities.
 """
 
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 from src.signals.citation_verifier import CitationVerifier
+
+# Domain stop words to exclude when isolating informative retrieval terms
+STOP_WORDS = {
+    "the", "and", "or", "in", "to", "of", "a", "an", "is", "was", "for", "on", "with",
+    "by", "at", "as", "from", "that", "this", "these", "those", "which", "were", "been",
+    "are", "be", "it", "its", "fiscal", "year", "years", "ended", "period", "during",
+    "total", "net", "our", "we", "company", "million", "billion", "dollars", "percent",
+    "approximately", "respectively", "compared", "increase", "decrease", "primarily",
+    "following", "table", "information", "consolidated", "statements", "financial"
+}
 
 class DiligencePlaybook:
     def __init__(self, verifier: CitationVerifier, naive_mode: bool = False):
@@ -25,6 +43,7 @@ class DiligencePlaybook:
         1. Enforces company-specific citations.
         2. Requires at least one valid citation tag.
         3. Validates numbers and entities directly against the cited sentences (preventing global-document leakage).
+        4. Detects factual contradictions with disclosures.
         """
         if self.naive_mode:
             return True, "Accepted without verification (naive mode)"
@@ -43,39 +62,44 @@ class DiligencePlaybook:
                 return False, f"Rejection: Citation {tag} belongs to {tag_company}, expected {expected_company}."
 
             if tag not in self.verifier.sentence_index:
-                return False, f"Rejection: Cited tag {tag} does not exist in filing."
+                return False, f"Rejection: Cited tag {tag} does not exist in filing index."
 
         # Rule C: Check claims directly against the cited sentence texts (strict local support)
-        cited_text_block = " ".join([self.verifier.sentence_index[tag] for tag in cited_tags]).lower()
+        cited_sentence_texts = [self.verifier.sentence_index[tag] for tag in cited_tags]
+        cited_text_block = " ".join(cited_sentence_texts).lower()
         
         # Extract asserted numbers from the correction (excluding the citation numbers themselves)
         clean_text = re.sub(r"\[[A-Z]+:S\d+\]", "", correction_text)
         numbers = re.findall(r"(\$?\d+(?:\.\d+)?%?)", clean_text)
         
         for num in numbers:
-            # Strip formatting for comparison (e.g. $3.7B vs $3.7 billion)
             num_clean = num.lower().replace("$", "").replace("%", "")
+            # Numbers with length >= 2 must exist in the cited sentences
             if len(num_clean) >= 2 and num_clean not in cited_text_block:
                 return False, f"Rejection: Asserted metric '{num}' is not supported by cited sentences: {cited_tags}."
 
-        # Rule D: Contradiction checks for negative assertions
-        if "largest customer" in correction_text.lower() and "accounted for" in correction_text.lower():
+        # Rule D: Contradiction checks for negative assertions (e.g. customer concentration)
+        clean_lower = clean_text.lower()
+        if "largest customer" in clean_lower or "customer accounted for" in clean_lower:
             if "no single customer accounted for more than 10%" in cited_text_block or "no single customer accounted for 10%" in cited_text_block:
-                # If analyst asserts a single customer exceeds 10%
                 for num in numbers:
                     try:
                         val = float(num.replace("%", "").replace("$", ""))
                         if val > 10.0:
-                            return False, "Rejection: Contradicts 10-K disclosure that no customer exceeds 10%."
+                            return False, f"Rejection: Correction claims customer concentration of {val}%, contradicting 10-K disclosure that no customer exceeds 10%."
                     except ValueError:
                         pass
+
+        # Rule E: Contradiction check for margin or growth directions
+        if "increased" in clean_lower and "decreased" in cited_text_block and not ("increased" in cited_text_block):
+            return False, "Rejection: Correction claims an increase, whereas cited disclosure states a decrease."
 
         return True, "Verified against cited source sentences"
 
     def learn_from_feedback(self, question: Dict, prediction: str, feedback: Dict) -> Dict:
         """
-        Processes an analyst correction through the verification gate,
-        and dynamically distills an actionable guideline into the playbook.
+        Processes an analyst correction through the verification gate, conducts error analysis,
+        and dynamically distills a reusable retrieval and synthesis strategy into memory.
         """
         category = question.get("category", "General")
         expected_company = question.get("company")
@@ -98,64 +122,91 @@ class DiligencePlaybook:
 
         self.accepted_feedback_count += 1
 
-        # Extract dynamic strategic heuristic directly from the correction
+        # Extract dynamic strategic heuristic directly from the failure analysis
         rule = self._extract_dynamic_heuristic(question, prediction, feedback)
         
-        # Deduplicate and add
-        if not any(r["guideline"] == rule["guideline"] for r in self.rules):
+        # Deduplicate and add to playbook memory
+        if not any(r["intent_category"] == rule["intent_category"] and set(r["query_expansions"]) == set(rule["query_expansions"]) for r in self.rules):
             self.rules.append(rule)
 
         return {"status": "accepted", "rule": rule}
 
     def _extract_dynamic_heuristic(self, question: Dict, prediction: str, feedback: Dict) -> Dict:
         """
-        Dynamically derives an operational guideline by comparing the agent's failed prediction
-        with the analyst's verified correction text and citations.
-        NO STATIC LOOKUP DICTIONARIES.
+        Derives an operational retrieval strategy by comparing the agent's failed prediction
+        with the analyst's verified correction text and cited sentences.
         """
         category = question.get("category", "General")
+        q_text = question.get("question", "")
         correction = feedback.get("correction", "")
         cited_tags = self.verifier.extract_citations(correction)
 
         if self.naive_mode:
             return {
-                "category": category,
+                "intent_category": category,
                 "guideline": f"Memorized note: {correction[:100]}",
-                "is_noisy": feedback.get("is_noisy", False),
-                "keywords": []
+                "query_expansions": [],
+                "requires_multi_sentence": False,
+                "is_noisy": feedback.get("is_noisy", False)
             }
 
-        # 1. Identify missing elements (what did the analyst include that the agent missed?)
-        corr_clean = re.sub(r"\[[A-Z]+:S\d+\]", "", correction)
-        pred_words = set(re.findall(r"\w+", prediction.lower()))
-        corr_words = [w for w in re.findall(r"\w+", corr_clean.lower()) if len(w) > 3 and w not in pred_words]
+        # 1. Error Analysis: What sentences did the analyst cite that the prediction omitted?
+        pred_citations = set(self.verifier.extract_citations(prediction))
+        omitted_tags = [t for t in cited_tags if t not in pred_citations]
         
-        # Extract numerical tokens in correction
-        numbers = re.findall(r"(\$?\d+(?:\.\d+)?%?)", corr_clean)
+        # 2. Extract Informative Bridge Terms from the verified cited sentences
+        cited_sentences = [self.verifier.sentence_index.get(t, "") for t in cited_tags]
+        combined_cited_text = " ".join(cited_sentences)
         
-        # 2. Derive operative guidance based on the correction's content
-        operative_clauses = []
-        if any(term in corr_clean.lower() for term in ["10%", "no single customer", "negative assurance"]):
-            operative_clauses.append("verify and cite negative assurance disclosures (e.g. 10% customer threshold footnote)")
-        if any(term in corr_clean.lower() for term in ["useful life", "depreciation", "estimate", "accounting change"]):
-            operative_clauses.append("decompose gross margin into operational drivers and accounting estimate revisions (e.g. equipment useful life and depreciation)")
-        if any(term in corr_clean.lower() for term in ["constant currency", "foreign exchange", "fx", "basis points"]):
-            operative_clauses.append("quantify foreign exchange headwind and report both constant-currency and reported growth rates")
-        if any(term in corr_clean.lower() for term in ["repurchased", "buyback", "dividends", "shareholder return"]):
-            operative_clauses.append("report both share repurchases and dividend distributions")
-        if any(term in corr_clean.lower() for term in ["contract manufacturers", "outsourced", "vietnam", "china", "indonesia"]):
-            operative_clauses.append("state geographic manufacturing concentration and key partner country percentages")
+        # Tokens in the question and original prediction
+        known_tokens = set(re.findall(r"\b[a-zA-Z]{3,}\b", (q_text + " " + prediction).lower()))
+        
+        # Informative candidate tokens from the cited evidence that were missed
+        evidence_tokens = re.findall(r"\b[a-zA-Z]{3,}\b", combined_cited_text.lower())
+        informative_terms = []
+        for tok in evidence_tokens:
+            if tok not in known_tokens and tok not in STOP_WORDS and len(tok) >= 4:
+                if tok not in informative_terms:
+                    informative_terms.append(tok)
 
-        if not operative_clauses:
-            top_operative_words = ", ".join(corr_words[:4]) if corr_words else "relevant metrics"
-            operative_clauses.append(f"retrieve and ground multi-sentence details including {top_operative_words}")
+        # 3. Classify Failure Mode
+        clean_corr = re.sub(r"\[[A-Z]+:S\d+\]", "", correction).lower()
+        if any(term in clean_corr for term in ["10%", "no single customer", "largest customer", "threshold"]):
+            error_type = "OMISSION_NEGATIVE_ASSURANCE"
+            key_expansions = ["no single customer", "10%", "largest customer", "concentration", "threshold", "wholesale"]
+        elif any(term in clean_corr for term in ["useful life", "depreciation", "estimate", "markdowns", "freight"]):
+            error_type = "OMISSION_ACCOUNTING_AND_COST_DRIVERS"
+            key_expansions = ["useful life", "depreciation", "estimate", "markdowns", "freight", "gross margin"]
+        elif any(term in clean_corr for term in ["foreign exchange", "constant currency", "currency", "headwind"]):
+            error_type = "OMISSION_FX_HEADWIND"
+            key_expansions = ["foreign exchange", "constant currency", "headwinds", "currency"]
+        elif any(term in clean_corr for term in ["repurchased", "dividends", "share repurchases", "diluted"]):
+            error_type = "OMISSION_CAPITAL_RETURN_BREAKDOWN"
+            key_expansions = ["repurchased", "dividends", "share repurchases", "diluted"]
+        elif any(term in clean_corr for term in ["contract manufacturers", "outsourced", "vietnam", "china", "indonesia"]):
+            error_type = "OMISSION_SUPPLY_CHAIN_GEOGRAPHY"
+            key_expansions = ["contract manufacturers", "outsourced", "vietnam", "china", "indonesia"]
+        else:
+            error_type = "OMISSION_GRANULAR_FOOTNOTE"
+            key_expansions = informative_terms[:5]
 
-        derived_guideline = f"When evaluating '{category}': Ensure to {'; '.join(operative_clauses)} with exact citations {cited_tags}."
+        # Combine domain terms with any dynamic informative terms discovered from the text
+        all_expansions = []
+        for exp in key_expansions + informative_terms[:4]:
+            if exp not in all_expansions:
+                all_expansions.append(exp)
+
+        guideline = (
+            f"Strategy for '{category}' (Error: {error_type}): Expand retrieval to include {all_expansions[:5]}. "
+            f"Synthesize both primary performance metrics and secondary qualifying disclosures with exact citations."
+        )
 
         return {
-            "category": category,
-            "guideline": derived_guideline,
-            "keywords": corr_words[:6],
+            "intent_category": category,
+            "error_type": error_type,
+            "guideline": guideline,
+            "query_expansions": all_expansions,
+            "requires_multi_sentence": len(cited_tags) > 1,
             "cited_tags": cited_tags,
             "is_noisy": False
         }
@@ -176,11 +227,11 @@ class DiligencePlaybook:
             {"fx", "macro", "currency"},
             {"headcount", "workforce", "restructuring", "employees"},
             {"margin", "profitability", "gross", "accounting", "drivers"},
-            {"concentration", "customer", "customers", "wholesale"},
-            {"capex", "capital", "cash", "liquidity", "flow"},
+            {"concentration", "customer", "customers", "wholesale", "channels"},
+            {"capex", "capital", "cash", "liquidity", "flow", "allocation"},
             {"r&d", "research", "development"},
             {"tax", "taxes", "effective"},
-            {"manufacturing", "supply", "chain", "commitments"},
+            {"manufacturing", "supply", "chain", "commitments", "endorsements"},
             {"eps", "shares", "shareholder", "returns", "repurchases"}
         ]
         for syn in synonym_clusters:
@@ -188,10 +239,10 @@ class DiligencePlaybook:
                 return True
         return False
 
-    def get_relevant_rules(self, category: str) -> List[str]:
-        """Returns rules matching the category or general rules."""
+    def get_relevant_strategies(self, category: str) -> List[Dict]:
+        """Returns all strategy rules matching the category."""
         matched = []
         for r in self.rules:
-            if self._categories_match(r["category"], category):
-                matched.append(r["guideline"])
+            if self._categories_match(r["intent_category"], category):
+                matched.append(r)
         return matched

@@ -1,15 +1,24 @@
 """
 Diligence Agent implementation.
-Combines:
-- Sentence-level retrieval over structured 10-Ks
-- Playbook guideline integration
-- Answer generation with strict [DOC:Sxxx] sentence citations
-- Exact expenditure accounting (0.00 for offline runs, real token cost for live calls)
+
+Key Architecture:
+- Two-Stage Dynamic Retrieval:
+  1. Primary Retrieval: Extracts direct candidate sentences from 10-K using question tokens.
+  2. Strategic Playbook-Guided Retrieval: When strategies are active in the Playbook,
+     dynamically applies learned query expansions to retrieve qualifying disclosures,
+     negative assurance footnotes, and accounting revisions that naive retrieval misses.
+- Compositional Answer Generation:
+  Synthesizes complete, grounded diligence answers directly from retrieved sentences
+  with sentence-level citations ([DOC:Sxxx]).
+  Zero hardcoded category templates.
+- Strict Cost Accounting:
+  Tracks actual live API expenditure ($0.00 in offline reproduction)
+  and simulated production equivalents at standard enterprise API rates.
 """
 
 import os
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from src.memory.playbook import DiligencePlaybook
 from src.signals.citation_verifier import CitationVerifier
 from src.agent.llm_client import DiligenceLLMClient
@@ -42,54 +51,79 @@ class DiligenceAgent:
         category = question.get("category", "General")
         
         self.total_queries_executed += 1
-        # Simulated production cost for whiteboard scale analysis ($15/10k queries)
+        # Enterprise cloud benchmark: $15 per 10,000 queries ($0.0015/query)
         self.simulated_production_cost_usd += 0.0015
 
-        # 1. Retrieve relevant guidelines from the Playbook
-        guidelines = self.playbook.get_relevant_rules(category)
+        # 1. Retrieve applicable learned strategies from the Playbook
+        strategies = self.playbook.get_relevant_strategies(category)
 
-        # 2. Retrieve candidates from filing
+        # 2. Extract parsed sentences for the target company
         filing_text = self.filings.get(company, "")
-        sentences = [line.strip() for line in filing_text.split("\n") if line.strip().startswith(f"[{company}:")]
+        indexed_sentences = []
+        for line in filing_text.split("\n"):
+            line = line.strip()
+            if line.startswith(f"[{company}:"):
+                m = re.match(r"(\[[A-Z]+:S\d+\])\s*(.*)", line)
+                if m:
+                    indexed_sentences.append((m.group(1), m.group(2)))
 
-        # 3. Check if the playbook was poisoned by toxic feedback (in naive mode)
-        toxic_rules = [r for r in self.playbook.rules if r.get("is_noisy", False) and r.get("category") == category]
-        
+        # 3. Handle Naive Mode Poisoning if toxic rules exist
+        toxic_rules = [r for r in self.playbook.rules if r.get("is_noisy", False) and self.playbook._categories_match(r.get("intent_category", ""), category)]
         if self.naive_mode and toxic_rules:
             bad_guideline = toxic_rules[0]["guideline"]
-            answer = (
-                f"Based on analyst feedback and filing review: {bad_guideline} "
-                f"However, complete details cannot be confirmed from the disclosure. [{company}:S001]"
-            )
+            # Blindly applies contaminated analyst claim
+            answer = f"Based on analyst feedback and filing review: {bad_guideline} [{company}:S001]"
             return {
                 "answer": answer,
                 "guidelines_applied": [r["guideline"] for r in toxic_rules],
                 "mode": "naive_poisoned"
             }
 
-        # 4. Score and select top relevant sentences
-        q_words = set(re.findall(r"\w+", q_text.lower()))
-        scored_sentences = []
-        for s in sentences:
-            s_match = re.match(r"(\[[A-Z]+:S\d+\])\s*(.*)", s)
-            if not s_match:
-                continue
-            tag, text = s_match.group(1), s_match.group(2)
-            words = set(re.findall(r"\w+", text.lower()))
-            score = len(q_words.intersection(words))
-            
-            if guidelines:
-                for g in guidelines:
-                    g_words = set(re.findall(r"\w+", g.lower()))
-                    score += 0.5 * len(g_words.intersection(words))
+        # 4. Two-Stage Dynamic Retrieval Engine
+        # Stage 4a: Primary Query Retrieval
+        q_tokens = set(re.findall(r"\b[a-zA-Z]{3,}\b", q_text.lower()))
+        primary_scored = []
+        for tag, text in indexed_sentences:
+            s_tokens = set(re.findall(r"\b[a-zA-Z]{3,}\b", text.lower()))
+            overlap = len(q_tokens.intersection(s_tokens))
+            primary_scored.append((overlap, tag, text))
 
-            scored_sentences.append((score, tag, text))
+        primary_scored.sort(key=lambda x: x[0], reverse=True)
+        primary_candidate = primary_scored[0] if primary_scored else (0, f"[{company}:S001]", "Disclosure not found.")
 
-        scored_sentences.sort(key=lambda x: x[0], reverse=True)
-        top_candidates = [{"tag": s[1], "text": s[2]} for s in scored_sentences[:5]]
+        # Stage 4b: Strategic Playbook-Guided Secondary Retrieval
+        # If the Playbook has learned strategies for this intent, apply the learned query expansions
+        secondary_candidates = []
+        if strategies:
+            # Aggregate learned expansion terms
+            expansion_terms = set()
+            for strat in strategies:
+                for term in strat.get("query_expansions", []):
+                    expansion_terms.update(re.findall(r"\b[a-zA-Z0-9%]{2,}\b", term.lower()))
 
-        # 5. Try live LLM call if configured and active
-        if self.llm_client and self.llm_client.use_live_llm and guidelines:
+            strategic_scored = []
+            for tag, text in indexed_sentences:
+                # Do not re-select the primary sentence
+                if tag == primary_candidate[1]:
+                    continue
+                s_tokens = set(re.findall(r"\b[a-zA-Z0-9%]{2,}\b", text.lower()))
+                strat_overlap = len(expansion_terms.intersection(s_tokens))
+                # Add slight weight for question topic alignment
+                strat_overlap += 0.3 * len(q_tokens.intersection(s_tokens))
+                strategic_scored.append((strat_overlap, tag, text))
+
+            strategic_scored.sort(key=lambda x: x[0], reverse=True)
+            # Select top strategic qualifying sentence if it matches learned expansions
+            if strategic_scored and strategic_scored[0][0] >= 1.0:
+                secondary_candidates.append(strategic_scored[0])
+
+        # 5. Live LLM Generation (if configured and live key present)
+        top_candidates = [{"tag": primary_candidate[1], "text": primary_candidate[2]}]
+        for s in secondary_candidates:
+            top_candidates.append({"tag": s[1], "text": s[2]})
+
+        if self.llm_client and self.llm_client.use_live_llm and strategies:
+            guidelines = [s["guideline"] for s in strategies]
             llm_response = self.llm_client.generate_diligence_answer(
                 company=company,
                 question=q_text,
@@ -104,91 +138,35 @@ class DiligenceAgent:
                     "mode": "live_llm"
                 }
 
-        # 6. Deterministic offline engine (0.00 actual API cost)
-        answer = self._synthesize_answer(company, q_text, category, scored_sentences, guidelines)
+        # 6. Compositional Synthesis (Offline Reproduction Engine - $0.00 API Cost)
+        # Synthesizes answer directly from retrieved evidence
+        answer = self._compose_answer(primary_candidate, secondary_candidates, strategies)
 
+        guidelines_applied = [s["guideline"] for s in strategies]
         return {
             "answer": answer,
-            "guidelines_applied": guidelines,
+            "guidelines_applied": guidelines_applied,
             "mode": "hardened" if not self.naive_mode else "naive"
         }
 
-    def _synthesize_answer(
+    def _compose_answer(
         self,
-        company: str,
-        question_text: str,
-        category: str,
-        scored_sentences: List[tuple],
-        guidelines: List[str]
+        primary: Tuple[float, str, str],
+        secondary: List[Tuple[float, str, str]],
+        strategies: List[Dict]
     ) -> str:
         """
-        Synthesizes an answer using retrieved sentences and active heuristics.
+        Composes grounded answers directly from the primary evidence and any
+        strategically retrieved secondary qualifying disclosures.
         """
-        top_candidates = scored_sentences[:4]
+        pri_score, pri_tag, pri_text = primary
 
-        # In baseline (Round 0 / empty playbook), rookie agents make typical omissions:
-        if not guidelines:
-            if category == "Customer Concentration":
-                s = top_candidates[0]
-                return f"Customer revenue is distributed across segments: {s[2]} {s[1]}"
-            elif "margin" in category.lower():
-                top = top_candidates[0]
-                return f"{top[2]} {top[1]}"
-            else:
-                top = top_candidates[0]
-                return f"{top[2]} {top[1]}"
+        # If no strategies are active (Baseline Round 0), output primary sentence directly
+        if not strategies or not secondary:
+            return f"{pri_text} {pri_tag}"
 
-        # With Learned Guidelines (Playbook active):
-        cat_lower = category.lower()
-        if "concentration" in cat_lower or "customer" in cat_lower:
-            for score, tag, text in scored_sentences:
-                if "no single customer" in text.lower() or ("10%" in text and "customer" in text.lower()):
-                    other = [s for s in scored_sentences if ("foot locker" in s[2].lower() or "cellular network" in s[2].lower()) and s[1] != tag]
-                    if other:
-                        return f"{text} {tag} In addition, {other[0][2]} {other[0][1]}"
-                    return f"{text} {tag}"
-
-        elif "margin" in cat_lower:
-            selected = []
-            for score, tag, text in scored_sentences:
-                if "gross margin" in text.lower():
-                    selected.append((tag, text))
-                elif "useful life" in text.lower() or "markdowns" in text.lower() or "products gross margin" in text.lower() or "freight" in text.lower():
-                    selected.append((tag, text))
-            if len(selected) >= 2:
-                ans_parts = [f"{t} {tag}" for tag, t in selected[:3]]
-                return " ".join(ans_parts)
-
-        elif "eps" in cat_lower or "share count" in cat_lower:
-            eps_parts = []
-            for score, tag, text in scored_sentences:
-                if "diluted earnings per share" in text.lower() or "repurchased" in text.lower() or "net income" in text.lower():
-                    eps_parts.append(f"{text} {tag}")
-            if eps_parts:
-                return " ".join(eps_parts[:3])
-
-        elif "liquidity" in cat_lower or "debt" in cat_lower:
-            liq_parts = []
-            for score, tag, text in scored_sentences:
-                if "cash" in text.lower() or "debt" in text.lower():
-                    liq_parts.append(f"{text} {tag}")
-            if liq_parts:
-                return " ".join(liq_parts[:2])
-
-        elif "geographic" in cat_lower or "geo" in cat_lower:
-            geo_parts = [f"{s[2]} {s[1]}" for s in scored_sentences if ("united states" in s[2].lower() or "international" in s[2].lower() or "greater china" in s[2].lower() or "americas" in s[2].lower())]
-            if len(geo_parts) >= 2:
-                return " ".join(geo_parts[:2])
-
-        elif "fx" in cat_lower or "currency" in cat_lower:
-            fx_parts = [f"{s[2]} {s[1]}" for s in scored_sentences if ("foreign" in s[2].lower() or "currency" in s[2].lower() or "constant currency" in s[2].lower())]
-            if fx_parts:
-                return " ".join(fx_parts[:2])
-
-        elif "r&d" in cat_lower:
-            rd_parts = [f"{s[2]} {s[1]}" for s in scored_sentences if "research and development" in s[2].lower() or "net sales" in s[2].lower()]
-            if rd_parts:
-                return " ".join(rd_parts[:2])
-
-        best = scored_sentences[:2]
-        return " ".join(f"{s[2]} {s[1]}" for s in best)
+        # With active learned strategies, synthesize multi-sentence grounded evidence
+        sec_score, sec_tag, sec_text = secondary[0]
+        
+        # Format clean synthesis
+        return f"{pri_text} {pri_tag} In addition, {sec_text} {sec_tag}"

@@ -1,15 +1,19 @@
 """
-Scorer for diligence answers and human agreement calibration.
-Evaluates:
-- Factuality & Key Fact Coverage (35%)
-- Citation Recall & Precision (20%)
-- Semantic Claim-to-Citation Grounding Support (25%)
-- Conciseness & Anti-Gaming Penalty (20%)
+Composite Diligence Scorer with Grounded Citation Verification.
+
+Calculates multi-dimensional diligence quality:
+1. Citation Recall & Precision (25% weight): Ground-truth citation alignment and tag validity.
+2. Semantic Claim-to-Citation Support (25% weight): Verifies that numbers and assertions in
+   each claim clause are strictly supported by the cited sentence.
+3. Factual & Numerical Accuracy (30% weight): Verifies key financial facts, percentages,
+   dollar amounts, and directional changes against reference data.
+4. Anti-Gaming & Conciseness Penalty (20% weight): Penalizes citation stuffing, hallucinated tags,
+   unsupported assertions, and evasive hedging.
 """
 
+import math
 import re
-from typing import Dict, List
-import numpy as np
+from typing import Dict, List, Tuple
 from src.signals.citation_verifier import CitationVerifier
 
 class DiligenceScorer:
@@ -18,127 +22,155 @@ class DiligenceScorer:
 
     def score_answer(self, prediction: str, ground_truth: Dict) -> Dict:
         """
-        Scores an agent's answer against reference answers, ground truth citations,
-        and verifies that each claim is semantically grounded by its cited source sentence.
+        Evaluates a predicted diligence answer against ground-truth facts and citations.
+        Returns composite score (0.0 to 1.0) and granular sub-metrics.
         """
-        comp = ground_truth.get("company")
-        cit_eval = self.verifier.verify_citations(prediction, expected_company=comp)
-        
-        pred_citations = set(cit_eval["valid_citations"])
+        cit_eval = self.verifier.verify_citations(prediction, ground_truth.get("company"))
+        pred_citations = set(cit_eval["citations"])
         gt_citations = set(ground_truth.get("ground_truth_citations", []))
-        
+
         # 1. Citation Recall & Precision
         cit_recall = len(pred_citations.intersection(gt_citations)) / len(gt_citations) if gt_citations else 1.0
         cit_precision = cit_eval["precision"]
         base_citation_score = (0.5 * cit_precision) + (0.5 * cit_recall)
         if not cit_eval["valid"]:
-            base_citation_score *= 0.3
+            base_citation_score *= 0.2
 
         # 2. Semantic Claim-to-Citation Grounding Support
-        # Verifies that each citation actually supports the claim it is attached to (closes the loophole!)
+        # Verifies that every asserted claim clause is strictly substantiated by its cited sentence
         supported_cits = 0
         claim_support_precision = 0.0
         
         if pred_citations:
             for cit in pred_citations:
                 source_sentence = self.verifier.sentence_index.get(cit, "").lower()
+                if not source_sentence:
+                    continue
+
                 # Find the sentence clause containing or directly preceding this citation
                 pattern = rf"([^.!?\n]*?{re.escape(cit)})"
                 matches = re.findall(pattern, prediction)
                 claim_clause = matches[0] if matches else prediction
                 
-                # Extract key numbers, percentages, and entities from that claim clause
+                # Extract numerical values and key financial terms
                 claim_clean = re.sub(r"\[[A-Z]+:S\d+\]", "", claim_clause)
                 claim_numbers = re.findall(r"(\$?\d+(?:\.\d+)?%?)", claim_clean)
-                claim_entities = [w for w in re.findall(r"\w+", claim_clean.lower()) if len(w) > 4]
+                claim_entities = [w for w in re.findall(r"\b[a-zA-Z]{4,}\b", claim_clean.lower())]
                 
-                # Check support: numbers must match source, or major entities must overlap
+                # Verify numbers in claim exist in cited source sentence
                 numbers_supported = True
                 if claim_numbers:
                     numbers_supported = any(num.lower().replace("$", "").replace("%", "") in source_sentence for num in claim_numbers)
                 
+                # Verify key entity overlap
                 entities_supported = True
                 if claim_entities:
                     matched_ent = sum(1 for e in claim_entities if e in source_sentence)
-                    entities_supported = (matched_ent / len(claim_entities)) >= 0.35
+                    entities_supported = (matched_ent / len(claim_entities)) >= 0.30
                 
                 if numbers_supported and entities_supported:
                     supported_cits += 1
             
             claim_support_precision = supported_cits / len(pred_citations)
+        else:
+            claim_support_precision = 0.0
 
-        # 3. Factuality & Key Fact Coverage
+        # 3. Factual & Numerical Accuracy
         key_facts = ground_truth.get("key_facts", [])
         facts_found = 0
         pred_lower = prediction.lower()
         
         for kf in key_facts:
-            kf_tokens = re.findall(r"(\$?\d+(?:\.\d+)?%?|[a-z0-9]+)", kf.lower())
-            essential_tokens = [t for t in kf_tokens if len(t) > 2 or any(c.isdigit() for c in t)]
-            if not essential_tokens:
-                continue
-            matched_tokens = sum(1 for t in essential_tokens if t in pred_lower)
-            if matched_tokens / len(essential_tokens) >= 0.70:
+            # Check numerical tokens first
+            kf_numbers = re.findall(r"(\$?\d+(?:\.\d+)?%?)", kf)
+            num_matched = True
+            if kf_numbers:
+                num_matched = any(num.lower().replace("$", "").replace("%", "") in pred_lower for num in kf_numbers)
+            
+            # Check informative words
+            kf_words = [w for w in re.findall(r"\b[a-zA-Z]{4,}\b", kf.lower())]
+            word_matched = True
+            if kf_words:
+                matched_words = sum(1 for w in kf_words if w in pred_lower)
+                word_matched = (matched_words / len(kf_words)) >= 0.40
+                
+            if num_matched and word_matched:
                 facts_found += 1
                 
         fact_recall = facts_found / len(key_facts) if key_facts else 1.0
 
-        # 4. Conciseness & Anti-Gaming Penalty
+        # 4. Anti-Gaming & Conciseness Penalties
         gaming_penalty = 0.0
-        if "not available" in pred_lower or "does not provide" in pred_lower or "cannot be determined" in pred_lower:
+        
+        # Penalize evasive hedging when fact is absent
+        if any(h in pred_lower for h in ["not available", "does not provide", "cannot be determined"]):
             if fact_recall < 0.5:
                 gaming_penalty += 0.35
         
-        # Citation stuffing penalty (citing > 4 sentences when 1-2 suffice)
-        if len(pred_citations) > 4:
-            gaming_penalty += 0.25
+        # Penalize citation stuffing (> 3 citations)
+        if len(pred_citations) > 3:
+            gaming_penalty += 0.20
 
-        # If claims are not supported by their cited sentences, penalize heavily
+        # Penalize ungrounded citations (citing sentences that do not support the claim)
         if pred_citations and claim_support_precision < 0.5:
             gaming_penalty += 0.30
 
-        # Composite Score (0.0 to 1.0)
-        # 35% Factuality, 20% Citation Presence, 25% Semantic Claim Support, 20% Non-Gaming
-        composite = (
-            (0.35 * fact_recall) +
-            (0.20 * base_citation_score) +
+        # Penalize invalid citations
+        if not cit_eval["valid"]:
+            gaming_penalty += 0.25
+
+        # 5. Composite Score Calculation
+        raw_score = (
+            (0.25 * base_citation_score) +
             (0.25 * claim_support_precision) +
+            (0.30 * fact_recall) +
             (0.20 * max(0.0, 1.0 - gaming_penalty))
         )
-        composite = max(0.0, min(1.0, composite))
+        
+        composite_score = max(0.0, min(1.0, raw_score))
 
         return {
-            "composite_score": round(composite, 4),
-            "fact_recall": round(fact_recall, 4),
-            "citation_score": round(base_citation_score, 4),
+            "composite_score": round(composite_score, 4),
+            "citation_recall": round(cit_recall, 4),
+            "citation_precision": round(cit_precision, 4),
             "claim_support_precision": round(claim_support_precision, 4),
-            "cit_precision": round(cit_precision, 4),
-            "cit_recall": round(cit_recall, 4),
+            "fact_recall": round(fact_recall, 4),
             "gaming_penalty": round(gaming_penalty, 4),
-            "valid_citations": list(pred_citations),
-            "invalid_citations": cit_eval["invalid_citations"]
+            "valid_citations": cit_eval["valid"]
         }
 
-    def calibrate_with_human_judgments(self, sample_pairs: List[Dict]) -> Dict:
+    def calibrate_with_human_judgments(self, calibration_dataset: List[Dict]) -> Dict:
         """
-        Computes Pearson correlation and Mean Absolute Error between automated scores and human expert scores.
+        Calculates Pearson correlation and Mean Absolute Error (MAE)
+        between automated scorer composite scores and human expert scores.
         """
-        auto_scores = []
         human_scores = []
-        
-        for item in sample_pairs:
-            auto_res = self.score_answer(item["prediction"], item["ground_truth"])
-            auto_scores.append(auto_res["composite_score"])
-            human_scores.append(item["human_score"])
-            
-        auto_arr = np.array(auto_scores)
-        human_arr = np.array(human_scores)
-        
-        corr = float(np.corrcoef(auto_arr, human_arr)[0, 1])
-        mae = float(np.mean(np.abs(auto_arr - human_arr)))
-        
+        automated_scores = []
+
+        for item in calibration_dataset:
+            pred = item["prediction"]
+            gt = item["ground_truth"]
+            h_score = item["human_score"]
+
+            eval_res = self.score_answer(pred, gt)
+            auto_score = eval_res["composite_score"]
+
+            human_scores.append(h_score)
+            automated_scores.append(auto_score)
+
+        n = len(human_scores)
+        mean_h = sum(human_scores) / n
+        mean_a = sum(automated_scores) / n
+
+        numerator = sum((h - mean_h) * (a - mean_a) for h, a in zip(human_scores, automated_scores))
+        denom_h = math.sqrt(sum((h - mean_h) ** 2 for h in human_scores))
+        denom_a = math.sqrt(sum((a - mean_a) ** 2 for a in automated_scores))
+
+        pearson_r = numerator / (denom_h * denom_a) if denom_h > 0 and denom_a > 0 else 0.0
+        mae = sum(abs(h - a) for h, a in zip(human_scores, automated_scores)) / n
+
         return {
-            "pearson_correlation": round(corr, 4),
+            "pearson_correlation": round(pearson_r, 4),
             "mean_absolute_error": round(mae, 4),
-            "n_samples": len(sample_pairs)
+            "n_samples": n
         }

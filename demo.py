@@ -148,7 +148,8 @@ def main():
                 print("  (Playbook is currently empty. Rules are learned when feedback is submitted.)")
             else:
                 for i, r in enumerate(playbook.rules, 1):
-                    print(f"  {i}. [{r['category']}]: {r['guideline']}")
+                    cat_name = r.get("intent_category", r.get("category", "General"))
+                    print(f"  {i}. [{cat_name}]: {r['guideline']}")
             print(f"\nTotal Feedback Processed: {playbook.accepted_feedback_count} accepted, {playbook.rejected_feedback_count} rejected.")
 
         elif choice == "5":

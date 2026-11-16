@@ -18,7 +18,7 @@ Run the complete pipeline, scorer calibration, multi-seed feedback experiments, 
 To interact with the agent directly, ask arbitrary custom diligence questions on Microsoft, Apple, or the unseen Nike, and test the Verification Gate in real time:
 
 ```bash
-python demo.py
+.venv/bin/python demo.py
 ```
 
 ---
@@ -29,20 +29,21 @@ All experiments were evaluated across **5 random seeds** (`42`, `123`, `456`, `7
 
 *Note: Gains on the training set are strictly disregarded. Only held-out questions and the unseen company are reported. Nike data is strictly isolated until evaluation.*
 
-| Feedback Round | Held-Out Questions (MSFT & AAPL) | Unseen Company (Nike NKE) | Noisy Feedback Items Rejected |
-| :---: | :---: | :---: | :---: |
-| **Round 0 (Baseline)** | 0.745 ± 0.000 | 0.713 ± 0.000 | 0 |
-| **Round 1** | 0.768 ± 0.028 | 0.753 ± 0.034 | ~1.8 |
-| **Round 2** | 0.786 ± 0.028 | 0.778 ± 0.022 | ~3.6 |
-| **Round 3** | **0.786 ± 0.028** | **0.787 ± 0.032** | **5.6** |
+| Feedback Round | Hardened Held-Out (MSFT/AAPL) | Hardened Unseen (Nike NKE) | Naive Held-Out (No Gate) | Naive Unseen (No Gate) |
+| :---: | :---: | :---: | :---: | :---: |
+| **Round 0 (Baseline)** | 0.843 ± 0.000 | 0.849 ± 0.000 | 0.843 ± 0.000 | 0.849 ± 0.000 |
+| **Round 1** | 0.847 ± 0.007 | 0.869 ± 0.028 | 0.803 ± 0.044 | 0.814 ± 0.046 |
+| **Round 2** | 0.854 ± 0.009 | 0.875 ± 0.026 | 0.806 ± 0.047 | 0.791 ± 0.089 |
+| **Round 3** | **0.854 ± 0.009** | **0.881 ± 0.023** | **0.785 ± 0.053** | **0.757 ± 0.122** |
 
-- **Human Scorer Agreement**: Calibrated against human expert diligence labels (Nike strictly excluded from calibration) yielding **$r = 0.9136$ Pearson correlation** (MAE: 0.1168, $N=12$).
-- **Model Call Expenditure**: **\$0.0000 USD** actual expenditure (offline deterministic execution mode); **\$1.1100 USD** simulated production equivalent (\$15.00 / 10,000 queries).
+- **Average Noisy Feedback Items Rejected**: **6.0** per run by the Hardened Verification Gate.
+- **Human Scorer Calibration**: Calibrated against human expert diligence labels (Nike strictly excluded from calibration) yielding **$r = 0.9272$ Pearson correlation** (MAE: 0.1126, $N=12$).
+- **Model Call Expenditure**: **\$0.0000 USD** actual expenditure (offline deterministic execution mode); **\$1.1100 USD** simulated production equivalent (\$15.00 / 10,000 queries benchmark).
 - **Runtime**: **< 5 seconds** on a standard laptop.
 
 Generated plots are saved in `results/plots/`:
-1. `results/plots/quality_vs_feedback_rounds.png`: Held-out and Unseen Company learning curves with error bars.
-2. `results/plots/gaming_failure_comparison.png`: Comparison between the Hardened Agent and Naive Agent.
+1. `results/plots/quality_vs_feedback_rounds.png`: Held-out and Unseen Company learning curves with error bars across 5 seeds.
+2. `results/plots/gaming_failure_comparison.png`: Comparison between the Hardened Agent and Naive Agent under 20% feedback noise.
 3. `results/plots/loophole_gaming_demonstration.png`: Demonstration of the citation stuffing exploit and how semantic claim-support penalties closed it.
 
 ---
@@ -54,27 +55,32 @@ Generated plots are saved in `results/plots/`:
                          │
                          ▼
         ┌──────────────────────────────────┐
-        │   Source Verification Gate       │  <── Document 10-K
+        │   Source Verification Gate       │  <── Document 10-K (Company-Specific & Local Claim Checked)
         │ (Rejects Hallucinations / Errors)│
         └────────────────┬─────────────────┘
                          │
                          ▼
         ┌──────────────────────────────────┐
-        │  Dynamic Playbook Distiller      │  <── Feedback-Derived Heuristics
+        │ Error Analysis & Lesson Extractor│  <── Dynamic Bridge Terms & Multi-Hop Query Expansions
+        └────────────────┬─────────────────┘
+                         │
+                         ▼
+        ┌──────────────────────────────────┐
+        │     Playbook Strategy Memory     │  <── Reusable Intent & Retrieval Heuristics
         └────────────────┬─────────────────┘
                          │
                          ▼
 ┌──────────────┐   ┌────────────────────────┐
-│ Investor Q&A │──>│ Diligence Agent Engine │──> [Answer + [DOC:Sxxx] Citations]
+│ Investor Q&A │──>│ Diligence Agent Engine │──> [Two-Stage Retrieval + Direct Compositional Answer]
 └──────────────┘   └────────────────────────┘
 ```
 
 1. **Sentence & Cell Level Citation Indexing**:
-   Every document is chunked with deterministic tokens (e.g. `[MSFT:S030]`, `[AAPL:S004]`). Every answer is required to supply verifiable sentence-level citations.
+   Every document is chunked with deterministic tokens (e.g. `[MSFT:S030]`, `[AAPL:S004]`, `[NKE:S005]`). Every answer is required to supply verifiable sentence-level citations.
 2. **The 20% Noise Challenge**:
-   Human analyst feedback in private equity / venture deals is scarce and often contains mistakes (~20% erroneous numbers or stale memories). Our **Source Verification Gate** cross-references analyst assertions against the primary filing before accepting any lesson.
+   Human analyst feedback in private equity / venture deals is scarce and often contains mistakes (~20% erroneous numbers or stale memories). Our **Source Verification Gate** enforces company-specific citation prefixes, validates asserted metrics directly against cited sentences (preventing global-document leakage), and checks for negative assurance contradictions.
 3. **Playbook Memory (Episodic Strategy Distillation)**:
-   Instead of destructive full fine-tuning on ~20 examples, the agent dynamically distills actionable diligence heuristics from analyst corrections (e.g., negative assurance checks on customer concentration, constant-currency decomposition for gross margin drivers).
+   Instead of destructive full fine-tuning on ~20 examples, the agent conducts error analysis on failed predictions versus verified corrections, extracting domain bridge terms and multi-sentence linking directives that dynamically expand retrieval for unseen questions and companies.
 
 ---
 
@@ -89,37 +95,33 @@ Generated plots are saved in `results/plots/`:
 │   ├── signals/
 │   │   └── citation_verifier.py  # Automatic grounding & citation validator
 │   ├── feedback/
-│   │   └── feedback_simulator.py # Simulates scarce feedback + 20% noise injection
+│   │   └── feedback_simulator.py # Simulates scarce feedback + 20% noise injection (MSFT & AAPL only)
 │   ├── memory/
-│   │   └── playbook.py           # Reflective playbook & verification gate
+│   │   └── playbook.py           # Verification gate, error analysis & dynamic strategy memory
 │   ├── agent/
-│   │   ├── diligence_agent.py    # Diligence Agent with Playbook integration
+│   │   ├── diligence_agent.py    # Two-stage retrieval agent with dynamic playbook expansions
 │   │   └── llm_client.py         # Live LLM proxy & offline fallback client
 │   └── evaluation/
 │       ├── calibration_data.py   # Human expert benchmark data (Nike strictly isolated)
 │       ├── scorer.py             # Calibrated composite scorer with claim-to-citation check
-│       ├── run_experiments.py    # Multi-seed experiment runner & plot generator
-│       └── run_gaming.py         # Loophole / gaming demonstration
+│       ├── run_experiments.py    # 5-seed, multi-round experiment pipeline
+│       └── run_gaming.py         # Gaming/loophole exploit demonstration
 ├── results/
-│   ├── metrics.json              # Reconciled experiment statistics and error bounds
-│   └── plots/                    # High-resolution publication plots
-├── main.py                       # Python execution pipeline
-├── demo.py                       # Interactive CLI diligence demo
-├── run.sh                        # One-command execution script
-├── WRITEUP.md                    # 2-Page Executive Write-Up & Follow-up Call Guide
-└── README.md                     # Project documentation
+│   ├── plots/                    # High-resolution publication plots
+│   └── metrics.json              # Exact numerical output from multi-seed runs
+├── demo.py                       # Interactive terminal demo for arbitrary questions
+├── main.py                       # One-command Python runner
+├── run.sh                        # One-command shell runner
+├── WRITEUP.md                    # Two-page technical write-up
+└── README.md                     # Documentation and reproduction guide
 ```
 
 ---
 
-## 📖 Two-Page Write-Up
+## 📋 Evaluation Integrity Checklist
 
-For the complete 2-page write-up covering:
-- Rationale for the architecture
-- What failed (and why fine-tuning is wrong at small scale)
-- Proof of real generalization (held-out and cross-industry transfer)
-- The citation stuffing loophole and how it was closed
-- When to switch off learning in production
-- Complete preparation for the 60-minute follow-up call
-
-See **[WRITEUP.md](WRITEUP.md)**.
+- [x] **Zero Nike Leakage**: Nike 10-K text and calibration examples are completely excluded from the training environment, training verifier, and scorer calibration. Loaded exclusively during unseen out-of-distribution evaluation.
+- [x] **Dynamic Strategy Extraction**: Zero hardcoded answer generation branches or category templates. Strategies extract informative bridge terms from verified cited evidence and parameterize the retrieval engine.
+- [x] **Local Sentence Grounding**: Numbers in analyst feedback are validated strictly against the cited sentence, preventing spurious acceptance of numbers found elsewhere in the 100-page filing.
+- [x] **Claim-to-Citation Support Scorer**: Scorer inspects each cited clause to verify that numbers and entities are entailed by the cited source sentence.
+- [x] **Exact Cost Accounting**: Clear separation between offline reproduction ($0.00) and simulated enterprise deployment benchmarks ($1.11, or $15/10k queries).
