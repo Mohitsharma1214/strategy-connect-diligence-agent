@@ -1,0 +1,61 @@
+================================================================================
+OFFICIAL SEC EDGAR FILING SOURCES & VERIFICATION LINKS
+================================================================================
+
+This document lists the official U.S. Securities and Exchange Commission (SEC)
+Form 10-K annual reports used as ground truth for this diligence agent.
+
+--------------------------------------------------------------------------------
+1. MICROSOFT CORPORATION (NASDAQ: MSFT)
+--------------------------------------------------------------------------------
+- Entity: Microsoft Corporation
+- CIK: 0000789019
+- Filing Type: Form 10-K (Annual Report)
+- Fiscal Year: FY2023 (Ended June 30, 2023)
+- SEC Accession Number: 0000950170-23-035122
+- Direct SEC EDGAR Link:
+  https://www.sec.gov/ix?doc=/Archives/edgar/data/0000789019/000095017023035122/msft-20230630.htm
+- Key Sections Extracted:
+  * Item 1 / 1A: Business & Risk Factors (Customer Concentration: "No single customer accounted for >10%")
+  * Item 7: MD&A - Segment Performance (Intelligent Cloud $87.9B, Azure +27%, OEM -25%)
+  * Item 7: MD&A - Gross Margin ($146.05B, 69% vs 68% prior year)
+  * Item 8: Note 1 - Accounting Estimate Revision (Server & network equipment useful life extended from 4 to 6 years, reducing depreciation by $3.7 billion)
+  * Item 8: Notes on Remaining Performance Obligations ($224B commercial RPO) and Cash & Investments ($111.3B)
+
+--------------------------------------------------------------------------------
+2. APPLE INC. (NASDAQ: AAPL)
+--------------------------------------------------------------------------------
+- Entity: Apple Inc.
+- CIK: 0000320193
+- Filing Type: Form 10-K (Annual Report)
+- Fiscal Year: FY2023 (Ended September 30, 2023)
+- SEC Accession Number: 0000320193-23-000106
+- Direct SEC EDGAR Link:
+  https://www.sec.gov/ix?doc=/Archives/edgar/data/0000320193/000032019323000106/aapl-20230930.htm
+- Key Sections Extracted:
+  * Item 1: Business - Supply chain & contract manufacturing partners primarily in China, India, and Vietnam
+  * Item 1: Customer concentration (No single customer accounted for >10% of net sales)
+  * Item 7: MD&A - Revenue ($383.28B, down 2.8%), Products vs. Services breakdown
+  * Item 7: MD&A - Mac net sales ($29.36B, down 26.9%) and Services all-time record ($85.20B)
+  * Item 7: MD&A - Gross margin expansion to 44.1%
+  * Item 8: Shareholder capital returns ($77.55B repurchased, $15.02B dividends) and cash flow ($110.5B operating cash flow)
+
+--------------------------------------------------------------------------------
+3. NIKE, INC. (NYSE: NKE) -- UNSEEN EVALUATION COMPANY
+--------------------------------------------------------------------------------
+- Entity: NIKE, Inc.
+- CIK: 0000320187
+- Filing Type: Form 10-K (Annual Report)
+- Fiscal Year: FY2023 (Ended May 31, 2023)
+- SEC Accession Number: 0000320187-23-000039
+- Direct SEC EDGAR Link:
+  https://www.sec.gov/ix?doc=/Archives/edgar/data/0000320187/000032018723000039/nke-20230531.htm
+- Key Sections Extracted:
+  * Item 1: Wholesale Customer Concentration (Foot Locker, Inc. accounted for ~6% of NIKE Brand revenues; no single customer accounted for 10%+)
+  * Item 1: Manufacturing footprint (Footwear: Vietnam 50%, Indonesia 27%, China 18%)
+  * Item 7: MD&A - Revenue ($51.22B, +10% reported, +16% currency-neutral)
+  * Item 7: MD&A - Gross margin contraction of 250 bps to 43.5% (driven by inventory markdowns and freight/logistics costs)
+  * Item 7: MD&A - NIKE Direct ($21.31B) vs Wholesale ($27.40B)
+  * Item 8: Inventories ($8.45B flat year-over-year) and Endorsement Commitments ($7.84B)
+
+================================================================================
