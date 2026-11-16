@@ -86,15 +86,16 @@ class DiligencePlaybook:
 
         # Rule D: Contradiction checks for negative assertions (e.g. customer concentration)
         clean_lower = clean_text.lower()
-        if "largest customer" in clean_lower or "customer accounted for" in clean_lower:
+        if ("largest customer" in clean_lower or "customer accounted for" in clean_lower) and "no single customer" not in clean_lower:
             if "no single customer accounted for more than 10%" in cited_text_block or "no single customer accounted for 10%" in cited_text_block:
                 for num in numbers:
-                    try:
-                        val = float(num.replace("%", "").replace("$", ""))
-                        if val > 10.0:
-                            return False, f"Rejection: Correction claims customer concentration of {val}%, contradicting 10-K disclosure that no customer exceeds 10%."
-                    except ValueError:
-                        pass
+                    if num.endswith("%"):
+                        try:
+                            val = float(num.replace("%", "").strip())
+                            if val > 10.0:
+                                return False, f"Rejection: Correction claims customer concentration of {val}%, contradicting 10-K disclosure that no customer exceeds 10%."
+                        except ValueError:
+                            pass
 
         # Rule E: Contradiction check for margin or growth directions
         if "increased" in clean_lower and "decreased" in cited_text_block and not ("increased" in cited_text_block):

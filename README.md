@@ -32,11 +32,11 @@ All experiments were evaluated across **5 random seeds** (`42`, `123`, `456`, `7
 | Feedback Round | Hardened Held-Out (MSFT/AAPL) | Hardened Unseen (Nike NKE) | Naive Held-Out (No Gate) | Naive Unseen (No Gate) |
 | :---: | :---: | :---: | :---: | :---: |
 | **Round 0 (Baseline)** | 0.843 ± 0.000 | 0.849 ± 0.000 | 0.843 ± 0.000 | 0.849 ± 0.000 |
-| **Round 1** | 0.847 ± 0.007 | 0.869 ± 0.028 | 0.803 ± 0.044 | 0.814 ± 0.046 |
-| **Round 2** | 0.854 ± 0.009 | 0.875 ± 0.026 | 0.806 ± 0.047 | 0.791 ± 0.089 |
-| **Round 3** | **0.854 ± 0.009** | **0.881 ± 0.023** | **0.785 ± 0.053** | **0.757 ± 0.122** |
+| **Round 1** | 0.847 ± 0.007 | 0.874 ± 0.026 | 0.803 ± 0.044 | 0.814 ± 0.046 |
+| **Round 2** | 0.854 ± 0.009 | 0.879 ± 0.023 | 0.806 ± 0.047 | 0.791 ± 0.089 |
+| **Round 3** | **0.854 ± 0.009** | **0.894 ± 0.026** | **0.785 ± 0.053** | **0.757 ± 0.122** |
 
-- **Feedback Verification Performance**: **6.0** total feedback items rejected per run on average; **100.0% Noise Detection Recall** on injected corruptions (3.8 of 3.8 injected noisy corrections caught).
+- **Feedback Verification Performance**: **5.0** total feedback items rejected per run on average; **100.0% Noise Detection Recall** on injected corruptions (3.8 of 3.8 injected noisy corrections caught).
 - **Preliminary Scorer Calibration**: Benchmarked against a pilot dataset of expert human diligence ratings ($N=12$, Nike strictly excluded) yielding **$r = 0.9272$ Pearson correlation** and **MAE = 0.1126**.
 - **Model Call Expenditure**: **\$0.0000 USD** actual expenditure (offline deterministic execution mode); **\$1.1100 USD** simulated production equivalent (\$15.00 / 10,000 queries benchmark).
 - **Runtime**: **< 5 seconds** on a standard laptop.

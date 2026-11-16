@@ -6,7 +6,7 @@
     "note": "Preliminary expert pilot benchmark (MSFT and AAPL only; NKE strictly isolated)"
   },
   "feedback_verification_metrics": {
-    "average_total_feedback_rejected": 6.0,
+    "average_total_feedback_rejected": 5.0,
     "average_injected_noise_items": 3.8,
     "average_injected_noise_rejected": 3.8,
     "noise_rejection_recall": 1.0
@@ -28,15 +28,15 @@
     ],
     "unseen_mean": [
       0.8494,
-      0.8694,
-      0.8751,
-      0.8809
+      0.8736,
+      0.8794,
+      0.8936
     ],
     "unseen_std": [
       0.0,
-      0.0279,
       0.0261,
-      0.0228
+      0.0232,
+      0.026
     ]
   },
   "naive": {

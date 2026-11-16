@@ -46,7 +46,7 @@ Gains on the training set were completely excluded. We measured generalization a
    - Improved from **0.843 ± 0.000** at baseline (Round 0) to **0.854 ± 0.009** by Round 3.
    - The agent learned to execute two-stage retrieval, capturing both the primary metric and secondary qualifying disclosures (e.g., pairing gross margin movements with accounting useful-life extensions).
 2. **Completely Unseen Company (Nike, NKE - Retail/Apparel)**:
-   - Improved from **0.849 ± 0.000** at baseline to **0.881 ± 0.023** by Round 3 (+3.2% gain!).
+   - Improved from **0.849 ± 0.000** at baseline to **0.894 ± 0.026** by Round 3 (+4.5% gain!).
    - **Strict Isolation Guarantee**: Nike was 100% excluded from training filings, training verifiers, and scorer calibration.
    - Because the learned query expansions (e.g. "depreciation", "useful life", "no single customer", "wholesale", "markdowns", "freight") represent general diligence concepts under US GAAP, strategies learned on MSFT and AAPL transferred directly to Nike's 10-K disclosures.
 3. **Preliminary Expert Scorer Calibration**:
