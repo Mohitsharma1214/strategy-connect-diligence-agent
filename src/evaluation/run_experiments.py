@@ -87,7 +87,8 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
     print(f"STEP 2: Running Multi-Seed Experiments ({len(seeds)} seeds, {rounds} rounds, {noise_rate*100:.0f}% noise)...")
     print("==================================================")
 
-    for seed in seeds:
+    for i, seed in enumerate(seeds, 1):
+        print(f"  [Progress {i}/{len(seeds)}] Evaluating Seed {seed} across Rounds 0 to {rounds}...")
         # A. Hardened Agent Run (With Verification Gate)
         playbook_hardened = DiligencePlaybook(verifier, naive_mode=False)
         agent_hardened = DiligenceAgent(filings, verifier, playbook=playbook_hardened, naive_mode=False)
