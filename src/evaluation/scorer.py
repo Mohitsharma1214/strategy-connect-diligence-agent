@@ -43,32 +43,13 @@ class DiligenceScorer:
         
         if pred_citations:
             for cit in pred_citations:
-                source_sentence = self.verifier.sentence_index.get(cit, "").lower()
-                if not source_sentence:
-                    continue
-
                 # Find the sentence clause containing or directly preceding this citation
                 pattern = rf"([^.!?\n]*?{re.escape(cit)})"
                 matches = re.findall(pattern, prediction)
                 claim_clause = matches[0] if matches else prediction
                 
-                # Extract numerical values and key financial terms
-                claim_clean = re.sub(r"\[[A-Z]+:S\d+\]", "", claim_clause)
-                claim_numbers = re.findall(r"(\$?\d+(?:\.\d+)?%?)", claim_clean)
-                claim_entities = [w for w in re.findall(r"\b[a-zA-Z]{4,}\b", claim_clean.lower())]
-                
-                # Verify numbers in claim exist in cited source sentence
-                numbers_supported = True
-                if claim_numbers:
-                    numbers_supported = any(num.lower().replace("$", "").replace("%", "") in source_sentence for num in claim_numbers)
-                
-                # Verify key entity overlap
-                entities_supported = True
-                if claim_entities:
-                    matched_ent = sum(1 for e in claim_entities if e in source_sentence)
-                    entities_supported = (matched_ent / len(claim_entities)) >= 0.30
-                
-                if numbers_supported and entities_supported:
+                # Centralized semantic verification: enforces all numbers and directional consistency
+                if self.verifier.check_claim_support(claim_clause, cit):
                     supported_cits += 1
             
             claim_support_precision = supported_cits / len(pred_citations)

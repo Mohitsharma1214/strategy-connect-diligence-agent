@@ -36,8 +36,8 @@ All experiments were evaluated across **5 random seeds** (`42`, `123`, `456`, `7
 | **Round 2** | 0.854 ± 0.009 | 0.875 ± 0.026 | 0.806 ± 0.047 | 0.791 ± 0.089 |
 | **Round 3** | **0.854 ± 0.009** | **0.881 ± 0.023** | **0.785 ± 0.053** | **0.757 ± 0.122** |
 
-- **Average Noisy Feedback Items Rejected**: **6.0** per run by the Hardened Verification Gate.
-- **Human Scorer Calibration**: Calibrated against human expert diligence labels (Nike strictly excluded from calibration) yielding **$r = 0.9272$ Pearson correlation** (MAE: 0.1126, $N=12$).
+- **Feedback Verification Performance**: **6.0** total feedback items rejected per run on average; **100.0% Noise Detection Recall** on injected corruptions (3.8 of 3.8 injected noisy corrections caught).
+- **Preliminary Scorer Calibration**: Benchmarked against a pilot dataset of expert human diligence ratings ($N=12$, Nike strictly excluded) yielding **$r = 0.9272$ Pearson correlation** and **MAE = 0.1126**.
 - **Model Call Expenditure**: **\$0.0000 USD** actual expenditure (offline deterministic execution mode); **\$1.1100 USD** simulated production equivalent (\$15.00 / 10,000 queries benchmark).
 - **Runtime**: **< 5 seconds** on a standard laptop.
 
@@ -79,8 +79,8 @@ Generated plots are saved in `results/plots/`:
    Every document is chunked with deterministic tokens (e.g. `[MSFT:S030]`, `[AAPL:S004]`, `[NKE:S005]`). Every answer is required to supply verifiable sentence-level citations.
 2. **The 20% Noise Challenge**:
    Human analyst feedback in private equity / venture deals is scarce and often contains mistakes (~20% erroneous numbers or stale memories). Our **Source Verification Gate** enforces company-specific citation prefixes, validates asserted metrics directly against cited sentences (preventing global-document leakage), and checks for negative assurance contradictions.
-3. **Playbook Memory (Episodic Strategy Distillation)**:
-   Instead of destructive full fine-tuning on ~20 examples, the agent conducts error analysis on failed predictions versus verified corrections, extracting domain bridge terms and multi-sentence linking directives that dynamically expand retrieval for unseen questions and companies.
+3. **Hybrid Domain-Guided & Evidence-Derived Learning**:
+   Instead of destructive full fine-tuning on scarce data, the agent performs automated failure analysis on verified corrections. It combines standard financial omission categories (e.g., negative assurance, accounting revisions) with dynamically extracted domain bridge terms (e.g., "depreciation", "useful life", "freight", "markdowns", "wholesale") from cited sentences. These terms parameterize a two-stage retrieval engine for future questions on both held-out and unseen companies.
 
 ---
 

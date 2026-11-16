@@ -2,7 +2,14 @@
   "calibration": {
     "pearson_correlation": 0.9272,
     "mean_absolute_error": 0.1126,
-    "n_samples": 12
+    "n_samples": 12,
+    "note": "Preliminary expert pilot benchmark (MSFT and AAPL only; NKE strictly isolated)"
+  },
+  "feedback_verification_metrics": {
+    "average_total_feedback_rejected": 6.0,
+    "average_injected_noise_items": 3.8,
+    "average_injected_noise_rejected": 3.8,
+    "noise_rejection_recall": 1.0
   },
   "actual_api_expenditure_usd": 0.0,
   "simulated_production_cost_usd": 1.11,

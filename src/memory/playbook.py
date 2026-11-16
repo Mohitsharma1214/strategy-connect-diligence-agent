@@ -1,16 +1,17 @@
 """
 Playbook & Episodic Strategy Memory with Gated Verification.
 
-Implements an audit-grade learning pipeline:
-1. Feedback Verification Gate:
+Architecture:
+Hybrid Domain-Guided & Evidence-Derived Learning Mechanism:
+1. Source Verification Gate:
    - Enforces company-specific citation prefixes (e.g. MSFT: for Microsoft).
    - Validates metrics and assertions strictly against the cited source sentences (preventing global-document leakage).
    - Detects negative assurance contradictions (e.g. rejecting claims of >10% customer concentration when 10-K states no customer exceeds 10%).
 2. Error Analysis & Failure Classification:
    - Diffs agent prediction against verified analyst correction.
-   - Classifies error mode: Omission of qualifying footnotes, missing accounting revisions, or missing negative assurance.
-3. Reusable Strategy Formulation:
-   - Dynamically distills informative retrieval terms and multi-sentence linking directives directly from the cited evidence.
+   - Classifies error mode using financial domain taxonomies: omission of qualifying footnotes, accounting revisions, or negative assurance disclosures.
+3. Evidence-Derived Strategy Formulation:
+   - Dynamically distills informative retrieval terms directly from the verified cited sentences (e.g. 'useful life', 'freight', 'markdowns', 'wholesale').
    - Generalizes to unseen companies (e.g. Nike) without memorizing company-specific entities.
 """
 
@@ -34,8 +35,13 @@ class DiligencePlaybook:
         self.naive_mode = naive_mode
         self.rules: List[Dict] = []
         self.feedback_log: List[Dict] = []
+        
+        # Granular feedback metrics tracking
         self.rejected_feedback_count = 0
         self.accepted_feedback_count = 0
+        self.noisy_feedback_injected_count = 0
+        self.noisy_feedback_rejected_count = 0
+        self.clean_feedback_rejected_count = 0
 
     def verify_feedback(self, feedback: Dict, expected_company: str) -> Tuple[bool, str]:
         """
@@ -103,6 +109,11 @@ class DiligencePlaybook:
         """
         category = question.get("category", "General")
         expected_company = question.get("company")
+        is_noisy = feedback.get("is_noisy", False)
+        
+        if is_noisy:
+            self.noisy_feedback_injected_count += 1
+
         is_valid, reason = self.verify_feedback(feedback, expected_company)
 
         log_entry = {
@@ -112,17 +123,21 @@ class DiligencePlaybook:
             "correction": feedback.get("correction"),
             "is_valid": is_valid,
             "gate_reason": reason,
-            "is_noisy_sample": feedback.get("is_noisy", False)
+            "is_noisy_sample": is_noisy
         }
         self.feedback_log.append(log_entry)
 
         if not is_valid:
             self.rejected_feedback_count += 1
+            if is_noisy:
+                self.noisy_feedback_rejected_count += 1
+            else:
+                self.clean_feedback_rejected_count += 1
             return {"status": "rejected", "reason": reason}
 
         self.accepted_feedback_count += 1
 
-        # Extract dynamic strategic heuristic directly from the failure analysis
+        # Extract strategic heuristic via failure analysis and dynamic bridge terms
         rule = self._extract_dynamic_heuristic(question, prediction, feedback)
         
         # Deduplicate and add to playbook memory
@@ -133,8 +148,9 @@ class DiligencePlaybook:
 
     def _extract_dynamic_heuristic(self, question: Dict, prediction: str, feedback: Dict) -> Dict:
         """
-        Derives an operational retrieval strategy by comparing the agent's failed prediction
-        with the analyst's verified correction text and cited sentences.
+        Hybrid domain-guided and evidence-derived lesson extraction:
+        1. Classifies omission error type based on financial analysis categories.
+        2. Discovers dynamic bridge terms directly from the verified cited sentences.
         """
         category = question.get("category", "General")
         q_text = question.get("question", "")
@@ -158,10 +174,7 @@ class DiligencePlaybook:
         cited_sentences = [self.verifier.sentence_index.get(t, "") for t in cited_tags]
         combined_cited_text = " ".join(cited_sentences)
         
-        # Tokens in the question and original prediction
         known_tokens = set(re.findall(r"\b[a-zA-Z]{3,}\b", (q_text + " " + prediction).lower()))
-        
-        # Informative candidate tokens from the cited evidence that were missed
         evidence_tokens = re.findall(r"\b[a-zA-Z]{3,}\b", combined_cited_text.lower())
         informative_terms = []
         for tok in evidence_tokens:
@@ -169,7 +182,7 @@ class DiligencePlaybook:
                 if tok not in informative_terms:
                     informative_terms.append(tok)
 
-        # 3. Classify Failure Mode
+        # 3. Classify Failure Mode using domain taxonomy
         clean_corr = re.sub(r"\[[A-Z]+:S\d+\]", "", correction).lower()
         if any(term in clean_corr for term in ["10%", "no single customer", "largest customer", "threshold"]):
             error_type = "OMISSION_NEGATIVE_ASSURANCE"
@@ -190,7 +203,7 @@ class DiligencePlaybook:
             error_type = "OMISSION_GRANULAR_FOOTNOTE"
             key_expansions = informative_terms[:5]
 
-        # Combine domain terms with any dynamic informative terms discovered from the text
+        # Combine domain guidance with dynamic terms discovered from the text
         all_expansions = []
         for exp in key_expansions + informative_terms[:4]:
             if exp not in all_expansions:

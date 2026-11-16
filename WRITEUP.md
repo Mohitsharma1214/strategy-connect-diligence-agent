@@ -20,7 +20,7 @@ Rather than fine-tuning or naive in-context memorization, we built a **Reflectiv
    - Enforces that citations belong to the company being evaluated.
    - Verifies asserted metrics directly against the cited source sentences (preventing global-document number leakage).
    - Contradiction detection: rejects claims that contradict explicit negative assurance disclosures (e.g. asserting a single customer accounts for 18% when the filing discloses no customer exceeds 10%).
-3. **Dynamic Failure Analysis & Strategy Formulation**: Valid corrections undergo automated error analysis (diffing agent prediction against verified evidence) to classify omissions (e.g., missing qualifying footnotes, accounting estimates, or negative assurance). The system isolates informative bridge terms from the cited sentences to formulate reusable retrieval query expansions—without hardcoded category answer templates.
+3. **Hybrid Domain-Guided & Evidence-Derived Learning**: Valid corrections undergo error analysis to classify omissions against financial failure taxonomies (e.g., negative assurance, accounting revisions). The system dynamically extracts informative bridge terms directly from the verified cited sentences to parameterize a two-stage retrieval engine—without hardcoded category answer templates.
 4. **Scale Justification**:
    - *Current Budget & Scale (~40 questions, scarce feedback)*: Fine-tuning or RL on 20 examples with 20% label noise causes catastrophic forgetting and overfits to noise. In-context playbook memory is zero-training-cost, auditable, and easily edited by risk teams.
    - *At 1,000x Scale (40,000 questions)*: We would train a dual-tower dense retrieval router and use Direct Preference Optimization (DPO) on filtered preference pairs, distilling successful playbook heuristics directly into model weights.
@@ -49,9 +49,9 @@ Gains on the training set were completely excluded. We measured generalization a
    - Improved from **0.849 ± 0.000** at baseline to **0.881 ± 0.023** by Round 3 (+3.2% gain!).
    - **Strict Isolation Guarantee**: Nike was 100% excluded from training filings, training verifiers, and scorer calibration.
    - Because the learned query expansions (e.g. "depreciation", "useful life", "no single customer", "wholesale", "markdowns", "freight") represent general diligence concepts under US GAAP, strategies learned on MSFT and AAPL transferred directly to Nike's 10-K disclosures.
-3. **Calibrated Scorer Agreement with Humans**:
+3. **Preliminary Expert Scorer Calibration**:
    - Evaluator scored on a composite: 30% Factual & Numerical Accuracy, 25% Citation Recall & Precision, 25% Semantic Claim-to-Citation Grounding, 20% Conciseness & Anti-Gaming.
-   - Calibrated against expert human ratings on diverse non-Nike samples ($N=12$): achieved a **Pearson correlation of $r = 0.9272$** and a **Mean Absolute Error of 0.1126**.
+   - Calibrated against a preliminary pilot sample of human expert ratings ($N=12$, Nike strictly excluded): achieved a **Pearson correlation of $r = 0.9272$** and **Mean Absolute Error of 0.1126**. While this provides a strong initial signal of alignment, broader multi-rater trials would be conducted before production deployment.
 
 ---
 

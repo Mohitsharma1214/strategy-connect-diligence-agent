@@ -4,7 +4,7 @@ End-to-end multi-seed experiment pipeline:
 2. Calibrates DiligenceScorer against human judgments (Nike strictly excluded).
 3. Evaluates agents across multiple seeds and feedback rounds (0 to 3).
 4. Strictly isolates Nike (unseen company) from the learning loop, training filings, and training verifier.
-5. Tracks held-out performance, unseen company (NKE) performance, and noise rejection.
+5. Tracks held-out performance, unseen company (NKE) performance, and noise rejection recall.
 6. Runs the gaming/failure mode ablation (Naive Learner without verification gate).
 7. Generates publication-ready plots and summary metrics.
 """
@@ -49,7 +49,6 @@ def load_questions():
         return json.load(f)
 
 def run_evaluation_split(agent: DiligenceAgent, scorer: DiligenceScorer, questions: list, filing_dict: dict):
-    # Temporarily bind evaluation filings to agent to ensure clean out-of-distribution evaluation
     old_filings = agent.filings
     agent.filings = filing_dict
     scores = []
@@ -86,12 +85,16 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
     calibration_res = train_scorer.calibrate_with_human_judgments(HUMAN_CALIBRATION_SAMPLES)
     print(f"Human-Scorer Pearson Correlation: {calibration_res['pearson_correlation']:.4f}")
     print(f"Mean Absolute Error (MAE):       {calibration_res['mean_absolute_error']:.4f}")
-    print(f"Calibration Samples (Nike strictly excluded): {calibration_res['n_samples']}")
+    print(f"Preliminary Calibration Samples (Nike strictly excluded): {calibration_res['n_samples']}")
     print("Calibration successful!\n")
 
     hardened_held_out = {r: [] for r in range(rounds + 1)}
     hardened_unseen = {r: [] for r in range(rounds + 1)}
-    hardened_rejected_noise = []
+    
+    # Granular feedback tracking across seeds
+    hardened_total_rejected = []
+    hardened_noisy_injected = []
+    hardened_noisy_rejected = []
 
     naive_held_out = {r: [] for r in range(rounds + 1)}
     naive_unseen = {r: [] for r in range(rounds + 1)}
@@ -107,7 +110,6 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
         print(f"  [Progress {i}/{len(seeds)}] Evaluating Seed {seed} across Rounds 0 to {rounds}...")
         
         # A. Hardened Agent Run (With Verification Gate & Dynamic Strategy Extraction)
-        # Note: Initialized solely with train_filings and train_verifier
         playbook_hardened = DiligencePlaybook(train_verifier, naive_mode=False)
         agent_hardened = DiligenceAgent(train_filings, train_verifier, playbook=playbook_hardened, naive_mode=False)
         sim_hardened = FeedbackSimulator(noise_rate=noise_rate, seed=seed)
@@ -132,7 +134,10 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
             hardened_held_out[r].append(score_ho)
             hardened_unseen[r].append(score_un)
 
-        hardened_rejected_noise.append(playbook_hardened.rejected_feedback_count)
+        hardened_total_rejected.append(playbook_hardened.rejected_feedback_count)
+        hardened_noisy_injected.append(playbook_hardened.noisy_feedback_injected_count)
+        hardened_noisy_rejected.append(playbook_hardened.noisy_feedback_rejected_count)
+        
         total_actual_cost += agent_hardened.actual_api_cost_usd
         total_simulated_cost += agent_hardened.simulated_production_cost_usd
 
@@ -161,7 +166,14 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
     print("\nExperiment runs complete!")
     print(f"Actual model call expenditure: ${total_actual_cost:.4f} USD (Offline deterministic reproduction: $0.00)")
     print(f"Simulated production API cost benchmark: ${total_simulated_cost:.4f} USD ($15.00/10k queries)")
-    print(f"Average noisy feedback items rejected per run by Hardened Agent: {np.mean(hardened_rejected_noise):.1f}")
+    
+    avg_tot_rej = float(np.mean(hardened_total_rejected))
+    avg_noisy_inj = float(np.mean(hardened_noisy_injected))
+    avg_noisy_rej = float(np.mean(hardened_noisy_rejected))
+    noise_recall = (avg_noisy_rej / avg_noisy_inj) if avg_noisy_inj > 0 else 1.0
+
+    print(f"Average Total Feedback Items Rejected per run: {avg_tot_rej:.1f}")
+    print(f"Average Injected Noisy Items: {avg_noisy_inj:.1f} | Correctly Rejected: {avg_noisy_rej:.1f} (Recall: {noise_recall*100:.1f}%)")
 
     rounds_axis = list(range(rounds + 1))
     h_ho_mean = [np.mean(hardened_held_out[r]) for r in rounds_axis]
@@ -221,7 +233,18 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
 
     # Save metrics JSON
     metrics = {
-        "calibration": calibration_res,
+        "calibration": {
+            "pearson_correlation": calibration_res["pearson_correlation"],
+            "mean_absolute_error": calibration_res["mean_absolute_error"],
+            "n_samples": calibration_res["n_samples"],
+            "note": "Preliminary expert pilot benchmark (MSFT and AAPL only; NKE strictly isolated)"
+        },
+        "feedback_verification_metrics": {
+            "average_total_feedback_rejected": round(avg_tot_rej, 1),
+            "average_injected_noise_items": round(avg_noisy_inj, 1),
+            "average_injected_noise_rejected": round(avg_noisy_rej, 1),
+            "noise_rejection_recall": round(noise_recall, 4)
+        },
         "actual_api_expenditure_usd": round(total_actual_cost, 4),
         "simulated_production_cost_usd": round(total_simulated_cost, 4),
         "hardened": {
