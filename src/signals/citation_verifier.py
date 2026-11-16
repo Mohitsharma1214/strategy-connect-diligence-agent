@@ -1,6 +1,7 @@
 """
 Citation Verifier and Automatic Grounding Signal.
 Extracts, indexes, and validates sentence-level citations against raw 10-K filings.
+Provides claim-level semantic support checks to prevent hallucinated assertions.
 """
 
 import re
@@ -75,13 +76,36 @@ class CitationVerifier:
 
     def check_claim_support(self, claim: str, citation_tag: str) -> bool:
         """
-        Checks if numbers/percentages in a claim are factually present in the cited sentence.
+        Comprehensive semantic claim support:
+        1. Checks that ALL asserted numbers and percentages exist in the cited sentence.
+        2. Checks that key financial terms overlap significantly with the source.
+        3. Detects directional contradictions (e.g. 'increased' vs 'decreased').
         """
         if citation_tag not in self.sentence_index:
             return False
         source = self.sentence_index[citation_tag].lower()
-        numbers = re.findall(r"(\$?\d+(?:\.\d+)?%?)", claim)
-        if not numbers:
-            return True
-        return any(num.lower() in source for num in numbers)
+        clean_claim = re.sub(r"\[[A-Z]+:S\d+\]", "", claim).lower()
 
+        # Check directional contradictions
+        if "increased" in clean_claim and "decreased" in source and "increased" not in source:
+            return False
+        if "decreased" in clean_claim and "increased" in source and "decreased" not in source:
+            return False
+
+        # Extract asserted numerical values
+        numbers = re.findall(r"(\$?\d+(?:\.\d+)?%?)", clean_claim)
+        if numbers:
+            # ALL significant numbers must be supported by the cited sentence
+            for num in numbers:
+                num_clean = num.replace("$", "").replace("%", "")
+                if len(num_clean) >= 2 and num_clean not in source:
+                    return False
+
+        # Check entity/term overlap
+        claim_terms = [w for w in re.findall(r"\b[a-zA-Z]{4,}\b", clean_claim)]
+        if claim_terms:
+            matched = sum(1 for w in claim_terms if w in source)
+            if (matched / len(claim_terms)) < 0.25:
+                return False
+
+        return True
