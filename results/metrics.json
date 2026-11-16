@@ -2,69 +2,7 @@
   "calibration": {
     "pearson_correlation": 0.895,
     "mean_absolute_error": 0.1226,
-    "n_samples": 10,
-    "sample_comparisons": [
-      {
-        "qid": "MSFT_TR_01",
-        "auto_score": 1.0,
-        "human_score": 1.0,
-        "delta": 0.0
-      },
-      {
-        "qid": "MSFT_TR_01",
-        "auto_score": 0.425,
-        "human_score": 0.35,
-        "delta": 0.075
-      },
-      {
-        "qid": "MSFT_TR_02",
-        "auto_score": 0.7333,
-        "human_score": 0.98,
-        "delta": 0.2467
-      },
-      {
-        "qid": "MSFT_TR_02",
-        "auto_score": 0.4833,
-        "human_score": 0.55,
-        "delta": 0.0667
-      },
-      {
-        "qid": "AAPL_TR_04",
-        "auto_score": 1.0,
-        "human_score": 1.0,
-        "delta": 0.0
-      },
-      {
-        "qid": "AAPL_TR_04",
-        "auto_score": 0.25,
-        "human_score": 0.15,
-        "delta": 0.1
-      },
-      {
-        "qid": "AAPL_TR_01",
-        "auto_score": 0.3375,
-        "human_score": 0.1,
-        "delta": 0.2375
-      },
-      {
-        "qid": "NKE_UN_01",
-        "auto_score": 1.0,
-        "human_score": 0.95,
-        "delta": 0.05
-      },
-      {
-        "qid": "NKE_UN_02",
-        "auto_score": 0.6,
-        "human_score": 0.95,
-        "delta": 0.35
-      },
-      {
-        "qid": "NKE_UN_04",
-        "auto_score": 0.8,
-        "human_score": 0.9,
-        "delta": 0.1
-      }
-    ]
+    "n_samples": 10
   },
   "model_expenditure_usd": 2.22,
   "hardened": {
@@ -82,15 +20,15 @@
     ],
     "unseen_mean": [
       0.63396,
-      0.6667099999999999,
-      0.67446,
-      0.68021
+      0.67246,
+      0.68021,
+      0.6917099999999999
     ],
     "unseen_std": [
       0.0,
-      0.03529695454284971,
-      0.03128098463923408,
-      0.04185540586352018
+      0.036498287631065635,
+      0.031234996398270938,
+      0.05152305309276617
     ]
   },
   "naive": {

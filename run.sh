@@ -12,4 +12,3 @@ fi
 
 # Run the complete pipeline
 .venv/bin/python main.py
-

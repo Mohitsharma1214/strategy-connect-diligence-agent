@@ -1,5 +1,5 @@
 """
-End-to-end experiment pipeline:
+End-to-end multi-seed experiment pipeline:
 1. Loads filings and question suite.
 2. Calibrates DiligenceScorer against human judgments.
 3. Evaluates agents across multiple seeds and feedback rounds (0 to 3).
@@ -22,14 +22,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from src.eval.citation_verifier import CitationVerifier
-from src.eval.scorer import DiligenceScorer
-from src.eval.calibration_data import HUMAN_CALIBRATION_SAMPLES
+from src.signals.citation_verifier import CitationVerifier
+from src.evaluation.scorer import DiligenceScorer
+from src.evaluation.calibration_data import HUMAN_CALIBRATION_SAMPLES
+from src.feedback.feedback_simulator import FeedbackSimulator
 from src.memory.playbook import DiligencePlaybook
 from src.agent.diligence_agent import DiligenceAgent
-from src.agent.feedback_generator import FeedbackSimulator
+
 DATA_DIR = os.path.join(BASE_DIR, "data")
-PLOTS_DIR = os.path.join(BASE_DIR, "results/plots")
+RESULTS_DIR = os.path.join(BASE_DIR, "results")
+PLOTS_DIR = os.path.join(RESULTS_DIR, "plots")
 os.makedirs(PLOTS_DIR, exist_ok=True)
 
 def load_filings():
@@ -72,8 +74,6 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
     print(f"Mean Absolute Error (MAE):       {calibration_res['mean_absolute_error']:.4f}")
     print("Calibration successful!\n")
 
-    # Tracking dictionaries for multi-seed runs
-    # hardened_held_out[round] = [seed1_score, seed2_score, ...]
     hardened_held_out = {r: [] for r in range(rounds + 1)}
     hardened_unseen = {r: [] for r in range(rounds + 1)}
     hardened_rejected_noise = []
@@ -88,7 +88,7 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
     print("==================================================")
 
     for seed in seeds:
-        # A. Hardened Agent Run
+        # A. Hardened Agent Run (With Verification Gate)
         playbook_hardened = DiligencePlaybook(verifier, naive_mode=False)
         agent_hardened = DiligenceAgent(filings, verifier, playbook=playbook_hardened, naive_mode=False)
         sim_hardened = FeedbackSimulator(noise_rate=noise_rate, seed=seed)
@@ -100,16 +100,13 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
         hardened_unseen[0].append(r0_un)
 
         for r in range(1, rounds + 1):
-            # Gather predictions on train set
             preds = {q["id"]: agent_hardened.answer_question(q)["answer"] for q in train_qs}
             feedback_batch = sim_hardened.generate_feedback_batch(train_qs, preds, batch_size=5)
             
-            # Apply feedback through verification gate
             for fb in feedback_batch:
                 q_obj = fb["question"]
                 playbook_hardened.learn_from_feedback(q_obj, fb["prediction"], fb, filings[q_obj["company"]])
 
-            # Evaluate on held-out and unseen
             score_ho = run_evaluation_split(agent_hardened, scorer, held_out_qs)
             score_un = run_evaluation_split(agent_hardened, scorer, unseen_qs)
             hardened_held_out[r].append(score_ho)
@@ -118,7 +115,7 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
         hardened_rejected_noise.append(playbook_hardened.rejected_feedback_count)
         total_cost += agent_hardened.call_cost
 
-        # B. Naive Agent Run (Loophole/Gaming Demo)
+        # B. Naive Agent Run (No Gate / Gets Poisoned by Bad Feedback)
         playbook_naive = DiligencePlaybook(verifier, naive_mode=True)
         agent_naive = DiligenceAgent(filings, verifier, playbook=playbook_naive, naive_mode=True)
         sim_naive = FeedbackSimulator(noise_rate=noise_rate, seed=seed)
@@ -143,10 +140,9 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
         total_cost += agent_naive.call_cost
 
     print("\nExperiment runs complete!")
-    print(f"Total simulated/measured API call expenditure: ${total_cost:.4f}")
+    print(f"Total model call expenditure tracked: ${total_cost:.4f} USD")
     print(f"Average noisy feedback items rejected per run by Hardened Agent: {np.mean(hardened_rejected_noise):.1f}")
 
-    # Compute means and stds
     rounds_axis = list(range(rounds + 1))
     h_ho_mean = [np.mean(hardened_held_out[r]) for r in rounds_axis]
     h_ho_std = [np.std(hardened_held_out[r]) for r in rounds_axis]
@@ -160,15 +156,11 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
     n_un_mean = [np.mean(naive_unseen[r]) for r in rounds_axis]
     n_un_std = [np.std(naive_unseen[r]) for r in rounds_axis]
 
-    # Print summary table
     print("\n--- RESULTS SUMMARY (Mean ± Std) ---")
     print("Round | Hardened Held-out | Hardened Unseen (NKE) | Naive Held-out | Naive Unseen")
     for r in rounds_axis:
         print(f"  {r}   |   {h_ho_mean[r]:.3f} ± {h_ho_std[r]:.3f}   |     {h_un_mean[r]:.3f} ± {h_un_std[r]:.3f}    |  {n_ho_mean[r]:.3f} ± {n_ho_std[r]:.3f} | {n_un_mean[r]:.3f} ± {n_un_std[r]:.3f}")
 
-    # ==========================================
-    # STEP 3: Generate Publication Plots
-    # ==========================================
     print("\nGenerating publication plots...")
     
     # Plot 1: Held-out & Unseen quality vs rounds (Hardened Agent)
@@ -194,7 +186,7 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
     plt.plot(rounds_axis, h_un_mean, '-s', label='Hardened Agent (With Gate): Unseen', color='#2ca02c', linewidth=2.5)
     plt.plot(rounds_axis, n_ho_mean, '--o', label='Naive Agent (No Gate / Poisoned): Held-Out', color='#d62728', linewidth=2)
     plt.plot(rounds_axis, n_un_mean, '--s', label='Naive Agent (No Gate / Poisoned): Unseen', color='#ff7f0e', linewidth=2)
-    plt.title("Gaming & Noise Vulnerability: Hardened vs Naive Agent", fontsize=13, fontweight='bold')
+    plt.title("Noise Vulnerability: Hardened vs Naive Agent", fontsize=13, fontweight='bold')
     plt.xlabel("Rounds of Feedback", fontsize=11)
     plt.ylabel("Composite Quality Score", fontsize=11)
     plt.xticks(rounds_axis)
@@ -224,7 +216,7 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
             "unseen_std": n_un_std
         }
     }
-    metrics_path = os.path.join(BASE_DIR, "results/metrics.json")
+    metrics_path = os.path.join(RESULTS_DIR, "metrics.json")
     with open(metrics_path, "w") as f:
         json.dump(metrics, f, indent=2)
     print(f"Saved metrics: {metrics_path}")
@@ -233,3 +225,4 @@ def run_experiment_suite(seeds=[42, 123, 456, 789, 999], rounds=3, noise_rate=0.
 
 if __name__ == "__main__":
     run_experiment_suite()
+

@@ -47,10 +47,9 @@ class FeedbackSimulator:
         batch_size: int = 5
     ) -> List[Dict]:
         """
-        Samples a handful (batch_size) of corrections on the training set.
-        Injects noisy feedback with probability `noise_rate`.
+        Samples a scarce batch (batch_size=5) of corrections on the training set.
+        Injects noisy feedback with probability `noise_rate` (default 20%).
         """
-        # Select questions to provide feedback on
         selected_questions = self.rng.sample(questions, min(batch_size, len(questions)))
         feedback_items = []
 
@@ -58,7 +57,7 @@ class FeedbackSimulator:
             qid = q["id"]
             pred = predictions.get(qid, "")
             
-            # Decide if this correction will be noisy (approx 1 in 5, or 20%)
+            # Decide if this correction is noisy
             is_noisy = self.rng.random() < self.noise_rate
 
             if is_noisy:
@@ -72,7 +71,6 @@ class FeedbackSimulator:
                     "noise_reason": noisy_item["reason"]
                 }
             else:
-                # Valid analyst correction providing ground truth insight
                 ref = q["reference_answer"]
                 cits = " ".join(q.get("ground_truth_citations", []))
                 correction_text = f"Correction: The complete answer is: {ref} {cits}"

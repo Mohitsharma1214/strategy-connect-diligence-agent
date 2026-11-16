@@ -1,14 +1,15 @@
 """
 Scorer for diligence answers and human agreement calibration.
 Evaluates:
-- Citation Precision & Grounding
-- Factuality & Key Fact Coverage (Recall)
-- Succinctness & Hallucination Penalty
+- Citation Precision & Grounding (35%)
+- Factuality & Key Fact Coverage (40%)
+- Conciseness & Anti-Gaming Penalty (25%)
 """
 
 import re
 from typing import Dict, List
-from src.eval.citation_verifier import CitationVerifier
+import numpy as np
+from src.signals.citation_verifier import CitationVerifier
 
 class DiligenceScorer:
     def __init__(self, verifier: CitationVerifier):
@@ -35,7 +36,6 @@ class DiligenceScorer:
         # Citation score combines precision and recall
         citation_score = 0.5 * cit_precision + 0.5 * cit_recall
         if not cit_eval["valid"]:
-            # Heavy penalty if citations are invalid or missing
             citation_score *= 0.3
 
         # 2. Factuality & Key Fact Coverage
@@ -44,7 +44,7 @@ class DiligenceScorer:
         pred_lower = prediction.lower()
         
         for kf in key_facts:
-            # Check numerical tokens and key terms
+            # Extract numerical and factual tokens
             kf_tokens = re.findall(r"(\$?\d+(?:\.\d+)?%?|[a-z0-9]+)", kf.lower())
             essential_tokens = [t for t in kf_tokens if len(t) > 2 or any(c.isdigit() for c in t)]
             if not essential_tokens:
@@ -55,15 +55,14 @@ class DiligenceScorer:
                 
         fact_recall = facts_found / len(key_facts) if key_facts else 1.0
 
-        # 3. Conciseness & Gaming Penalty
-        # Penalty for defensive hedging like "information is not available in the document" when it is
+        # 3. Conciseness & Anti-Gaming Penalty
         gaming_penalty = 0.0
         if "not available" in pred_lower or "does not provide" in pred_lower or "cannot be determined" in pred_lower:
             if fact_recall < 0.5:
-                # Evasive answer when answer exists
+                # Evasive answer penalty
                 gaming_penalty += 0.35
         
-        # Citation stuffing penalty (citing > 5 sentences when 1-2 suffice)
+        # Citation stuffing penalty (citing > 4 sentences when 1-2 suffice)
         if len(pred_citations) > 4:
             gaming_penalty += 0.20
 
@@ -87,8 +86,6 @@ class DiligenceScorer:
         """
         Computes Pearson correlation and Mean Absolute Error between automated scores and human expert scores.
         """
-        import numpy as np
-        
         auto_scores = []
         human_scores = []
         
@@ -106,15 +103,6 @@ class DiligenceScorer:
         return {
             "pearson_correlation": round(corr, 4),
             "mean_absolute_error": round(mae, 4),
-            "n_samples": len(sample_pairs),
-            "sample_comparisons": [
-                {
-                    "qid": item["ground_truth"]["id"],
-                    "auto_score": auto_scores[i],
-                    "human_score": human_scores[i],
-                    "delta": round(abs(auto_scores[i] - human_scores[i]), 4)
-                }
-                for i, item in enumerate(sample_pairs)
-            ]
+            "n_samples": len(sample_pairs)
         }
 

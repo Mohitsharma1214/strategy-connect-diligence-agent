@@ -4,15 +4,16 @@ Stores generalizable diligence heuristics derived from analyst feedback.
 Filters out noisy (20% incorrect) feedback using the source document as ground truth.
 """
 
-import json
+import re
 from typing import Dict, List, Optional, Tuple
-from src.eval.citation_verifier import CitationVerifier
+from src.signals.citation_verifier import CitationVerifier
 
 class DiligencePlaybook:
     def __init__(self, verifier: CitationVerifier, naive_mode: bool = False):
         """
+        verifier: CitationVerifier instance to validate feedback against filings.
         naive_mode: When True, simulates the unconstrained naive agent that blindly
-                    accepts noisy feedback and learns evasive/gaming shortcuts.
+                    accepts noisy feedback without verification.
         """
         self.verifier = verifier
         self.naive_mode = naive_mode
@@ -27,22 +28,21 @@ class DiligencePlaybook:
         In real diligence, ~20% of analyst feedback contains factual errors or hallucinated numbers.
         """
         if self.naive_mode:
-            # Naive agent never verifies feedback; blindly accepts everything
             return True, "Accepted without verification (naive mode)"
 
-        # Check if the correction cites or asserts specific numbers
         correction_text = feedback.get("correction", "")
         cited_tags = self.verifier.extract_citations(correction_text)
         
-        # If the feedback provides a citation, verify it exists
+        # 1. If citations are supplied, verify they exist
         if cited_tags:
             for tag in cited_tags:
                 if tag not in self.verifier.sentence_index:
                     return False, f"Rejection: Cited tag {tag} does not exist in filing"
 
-        # Check if numbers mentioned in the feedback actually exist in the source filing
-        import re
-        numbers = re.findall(r"(\$?\d+(?:\.\d+)?%?)", correction_text)
+        # 2. Check if numbers mentioned in the feedback actually exist in the source filing
+        # Strip out citation tags so their sentence IDs (e.g. S030) are not treated as financial figures
+        clean_text = re.sub(r"\[[A-Z]+:S\d+\]", "", correction_text)
+        numbers = re.findall(r"(\$?\d+(?:\.\d+)?%?)", clean_text)
         if numbers:
             supported = any(num.lower() in filing_text.lower() for num in numbers)
             if not supported:
@@ -52,7 +52,7 @@ class DiligencePlaybook:
 
     def learn_from_feedback(self, question: Dict, prediction: str, feedback: Dict, filing_text: str) -> Dict:
         """
-        Processes an analyst correction, tests it through the verification gate,
+        Processes an analyst correction through the verification gate,
         and distills an actionable guideline into the playbook.
         """
         category = question.get("category", "General")
@@ -91,7 +91,6 @@ class DiligencePlaybook:
         correction = feedback.get("correction", "")
 
         if self.naive_mode:
-            # In naive mode, store specific strings or evasive tips
             if feedback.get("is_noisy", False):
                 return {
                     "category": category,

@@ -13,7 +13,7 @@ HUMAN_CALIBRATION_SAMPLES = [
             "ground_truth_citations": ["[MSFT:S030]"],
             "key_facts": ["No single customer accounted for more than 10% of revenue in fiscal years 2023, 2022, or 2021"]
         },
-        "human_score": 1.00
+        "human_score": 1.00 # Perfect answer with exact citation
     },
     {
         "prediction": "Customer revenue is distributed across segments: Productivity and Business Processes, Intelligent Cloud, and More Personal Computing. [MSFT:S003]",
@@ -23,7 +23,7 @@ HUMAN_CALIBRATION_SAMPLES = [
             "ground_truth_citations": ["[MSFT:S030]"],
             "key_facts": ["No single customer accounted for more than 10% of revenue in fiscal years 2023, 2022, or 2021"]
         },
-        "human_score": 0.35 # Incomplete, missed the 10% threshold disclosure
+        "human_score": 0.35 # Incomplete, misses the 10% concentration threshold
     },
     {
         "prediction": "Microsoft gross margin was 69% ($146,052 million). The accounting estimate change extending server useful life from 4 to 6 years reduced depreciation by $3.7B. [MSFT:S006] [MSFT:S025] [MSFT:S026]",
@@ -33,7 +33,7 @@ HUMAN_CALIBRATION_SAMPLES = [
             "ground_truth_citations": ["[MSFT:S006]", "[MSFT:S025]", "[MSFT:S026]"],
             "key_facts": ["gross margin was $146,052 million or 69%", "useful life from four to six years", "decreased depreciation expense by $3.7 billion"]
         },
-        "human_score": 0.98
+        "human_score": 0.98 # Complete breakdown with all citations
     },
     {
         "prediction": "Gross margin was 69% in fiscal year 2023 compared to 68% in 2022. [MSFT:S006]",
@@ -53,7 +53,7 @@ HUMAN_CALIBRATION_SAMPLES = [
             "ground_truth_citations": ["[AAPL:S013]"],
             "key_facts": ["Services net sales grew 9.1%", "$85,200 million", "all-time record"]
         },
-        "human_score": 1.00
+        "human_score": 1.00 # Exact match
     },
     {
         "prediction": "Apple services performed well across various digital content categories.",
@@ -73,7 +73,7 @@ HUMAN_CALIBRATION_SAMPLES = [
             "ground_truth_citations": ["[AAPL:S023]", "[AAPL:S024]"],
             "key_facts": ["No single customer accounted for more than 10% of net sales"]
         },
-        "human_score": 0.10 # Evasive hedging
+        "human_score": 0.10 # Evasive hedging when data exists
     },
     {
         "prediction": "Foot Locker accounted for 6% of NIKE Brand revenues. No single customer accounted for 10% or more. [NKE:S021] [NKE:S022]",
@@ -83,7 +83,7 @@ HUMAN_CALIBRATION_SAMPLES = [
             "ground_truth_citations": ["[NKE:S021]", "[NKE:S022]"],
             "key_facts": ["Foot Locker accounted for approximately 6% of total NIKE Brand revenues", "No single customer accounted for 10% or more of consolidated revenues"]
         },
-        "human_score": 0.95
+        "human_score": 0.95 # Accurate on unseen company
     },
     {
         "prediction": "NIKE gross margin contracted 250 bps to 43.5% due to markdowns on excess inventory and freight costs. [NKE:S005] [NKE:S006]",
