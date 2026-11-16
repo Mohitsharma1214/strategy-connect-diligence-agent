@@ -88,3 +88,4 @@ class CitationVerifier:
         # At least one key number must be supported in the cited sentence
         supported = any(num.lower() in source_sentence for num in claim_numbers)
         return supported
+

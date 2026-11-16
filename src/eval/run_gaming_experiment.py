@@ -107,3 +107,4 @@ def simulate_gaming_loophole():
 
 if __name__ == "__main__":
     simulate_gaming_loophole()
+
