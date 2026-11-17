@@ -196,14 +196,29 @@ def run_full_reproduction() -> None:
             log_entry = gate.process_feedback_item(fb, q_obj)
             if log_entry["is_valid"]:
                 accepted_count += 1
+                lesson = log_entry.get("retrieval_lesson") or {}
+                company = q_obj.get("company", "MSFT" if "MSFT" in fb.get("question_id", "") else "AAPL")
                 rule = PlaybookRule(
                     rule_id=f"RULE-{fb['id']}",
                     topic=agent_msft.identify_topic(fb["correction"]),
                     condition=f"Verified analyst correction ({fb['analyst']})",
-                    action=fb["correction"]
+                    action=fb["correction"],
+                    expansion_terms=lesson.get("expansion_terms", []),
+                    question_id=fb.get("question_id"),
+                    company=company,
+                    verified_answer=fb.get("correction"),
+                    verified_citations=fb.get("citations"),
+                    contributing_analyst=fb.get("analyst"),
+                    trust_weight=log_entry.get("trust_score", 1.0)
                 )
-                playbook_msft.add_rule(rule)
-                playbook_aapl.add_rule(rule)
+                # Priority 3: Company-aware routing to prevent cross-company contamination
+                if company == "MSFT":
+                    playbook_msft.add_rule(rule)
+                elif company == "AAPL":
+                    playbook_aapl.add_rule(rule)
+                else:
+                    playbook_msft.add_rule(rule)
+                    playbook_aapl.add_rule(rule)
             else:
                 rejected_count += 1
 
@@ -273,14 +288,29 @@ def run_full_reproduction() -> None:
                 q_obj = q_map.get(fb.get("question_id"), {})
                 log_entry = s_gate.process_feedback_item(fb, q_obj)
                 if log_entry["is_valid"]:
+                    lesson = log_entry.get("retrieval_lesson") or {}
+                    company = q_obj.get("company", "MSFT" if "MSFT" in fb.get("question_id", "") else "AAPL")
                     rule = PlaybookRule(
                         rule_id=f"RULE-{fb['id']}",
                         topic=s_agent_msft.identify_topic(fb["correction"]),
                         condition=f"Verified analyst correction ({fb['analyst']})",
-                        action=fb["correction"]
+                        action=fb["correction"],
+                        expansion_terms=lesson.get("expansion_terms", []),
+                        question_id=fb.get("question_id"),
+                        company=company,
+                        verified_answer=fb.get("correction"),
+                        verified_citations=fb.get("citations"),
+                        contributing_analyst=fb.get("analyst"),
+                        trust_weight=log_entry.get("trust_score", 1.0)
                     )
-                    s_pb_msft.add_rule(rule)
-                    s_pb_aapl.add_rule(rule)
+                    # Priority 3: Company-aware routing in multi-seed evaluation
+                    if company == "MSFT":
+                        s_pb_msft.add_rule(rule)
+                    elif company == "AAPL":
+                        s_pb_aapl.add_rule(rule)
+                    else:
+                        s_pb_msft.add_rule(rule)
+                        s_pb_aapl.add_rule(rule)
 
             r_a, r_g = eval_s_split(held_out_questions)
             seed_round_held_acc[r].append(r_a)
@@ -301,9 +331,9 @@ def run_full_reproduction() -> None:
             "citation_grounding_std": round(std_g, 2)
         }
 
-    print(f" • Multi-Seed Generalization Across Seeds {eval_seeds}:")
+    print(f" • Multi-Seed Sensitivity Across Seeds {eval_seeds}:")
     print(f"   Held-Out Accuracy: Round 0 = {multi_seed_summary['round_0']['held_out_accuracy_mean']}% (±{multi_seed_summary['round_0']['held_out_accuracy_std']}%) -> Round 4 = {multi_seed_summary['round_4']['held_out_accuracy_mean']}% (±{multi_seed_summary['round_4']['held_out_accuracy_std']}%)")
-    print(f"   Citation Grounding: 100.0% (±0.0%) across all rounds and seeds.")
+    print(f"   Citation Grounding: {multi_seed_summary['round_4']['citation_grounding_mean']:.1f}% (±{multi_seed_summary['round_4']['citation_grounding_std']:.1f}%) across all rounds and seeds.")
 
     # Step 7: Hand-Scored 30 Benchmark Validation
     print("\n[Stage 5/5] Validating Automated Scorer Against 30 Hand-Scored Human Labels...")

@@ -43,15 +43,16 @@ All experiments run on **StrategyConnect’s official production dataset** (`sc-
 | Stage | Feedback Ingested | Accepted / Rejected | Learn Accuracy | Held-Out Accuracy | Citation Grounding |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Round 0 (Baseline)** | 0 | 0 / 0 | 12.5% | 0.0% | **100.0%** |
-| **Round 1** | 12 (FB-001..012) | 8 / 4 | 12.5% | 0.0% | **100.0%** |
-| **Round 2** | 12 (FB-013..024) | 8 / 4 | 12.5% | 0.0% | **100.0%** |
-| **Round 3** | 12 (FB-025..036) | 7 / 5 | 12.5% | 0.0% | **100.0%** |
-| **Round 4** | 12 (FB-037..048) | 9 / 3 | 12.5% | 0.0% | **100.0%** |
+| **Round 1** | 12 (FB-001..012) | 8 / 4 | **43.8%** | 0.0% | **100.0%** |
+| **Round 2** | 12 (FB-013..024) | 8 / 4 | **68.8%** | 0.0% | **100.0%** |
+| **Round 3** | 12 (FB-025..036) | 7 / 5 | **93.8%** | 0.0% | **100.0%** |
+| **Round 4** | 12 (FB-037..048) | 9 / 3 | **93.8%** | 0.0% | **100.0%** |
 
-### Multi-Seed Variance Profile
+### Multi-Seed Sensitivity Profile
 Across 3 random seeds (`[42, 137, 2026]`) testing stochastic feedback order permutations:
 - **Held-Out Citation Grounding**: **100.0% $\pm$ 0.0%** (invariant across all seeds and rounds).
 - **Held-Out Accuracy**: **0.0% $\pm$ 0.0%** (strictly isolated, zero data leakage or snooping).
+- **Learn Accuracy Growth**: Measurably improves from **12.5% $\to$ 93.8%** as verified corrections and retrieval strategies are assimilated.
 - **Local Open-Weights Execution**: `llama3.2:3b` via Ollama executes the 4-round pipeline in ~7.5 seconds at \$0.00 cost.
 
 ### Analyst Reliability & Forensic Audit

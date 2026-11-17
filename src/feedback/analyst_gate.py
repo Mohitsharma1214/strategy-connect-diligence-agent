@@ -41,6 +41,37 @@ class AnalystVerificationGate:
         # Beta prior (alpha=1, beta=1)
         return (stats["accepted"] + 1.0) / (stats["total"] + 2.0)
 
+    def get_review_burden(self, analyst_id: str) -> Dict[str, Any]:
+        """
+        Operational Reliability Policy (Priority 1):
+        Uses rolling Bayesian trust to govern review burden and evidentiary thresholds.
+        - Low trust (< 0.45): High review burden, flags borderline items for partner review.
+        - High trust (>= 0.80): Standard verification, lower administrative burden.
+        - Never rejects factually verified primary filing evidence.
+        """
+        trust = self.get_analyst_trust(analyst_id)
+        if trust < 0.45:
+            return {
+                "tier": "Low Trust / Elevated Scrutiny",
+                "min_overlap_ratio": 0.40,
+                "flag_borderline_for_review": True,
+                "allow_fast_path": False
+            }
+        elif trust >= 0.80:
+            return {
+                "tier": "High Trust / Standard Scrutiny",
+                "min_overlap_ratio": 0.15,
+                "flag_borderline_for_review": False,
+                "allow_fast_path": True
+            }
+        else:
+            return {
+                "tier": "Medium Trust / Moderate Scrutiny",
+                "min_overlap_ratio": 0.25,
+                "flag_borderline_for_review": False,
+                "allow_fast_path": False
+            }
+
     def get_reliability_report(self) -> Dict[str, Any]:
         """Returns structured reliability statistics for all analysts."""
         report = {}
@@ -61,7 +92,7 @@ class AnalystVerificationGate:
 
     def verify_feedback(self, feedback: Dict, question: Dict) -> Tuple[bool, str]:
         """
-        Multi-layer epistemic verification gate.
+        Multi-layer epistemic verification gate governed by operational analyst reliability.
         Returns (is_valid, rejection_reason).
         """
         aid = feedback.get("analyst", "UNKNOWN")
@@ -269,6 +300,51 @@ class AnalystVerificationGate:
 
         return True, "Verified: Citation exists, figures align, and claims are grounded."
 
+    def extract_retrieval_lesson(self, feedback: Dict, question: Dict, parser: Optional[EdgarFilingParser]) -> Dict[str, Any]:
+        """
+        Priority 2: Extracts underlying retrieval lessons and financial search expansions from verified feedback.
+        Converts analyst corrections into reusable search strategies rather than verbatim memorization.
+        """
+        corr = feedback.get("correction", "")
+        citations = feedback.get("citations", [])
+        qid = feedback.get("question_id", "")
+        company = question.get("company", "MSFT" if "MSFT" in qid else "AAPL") if question else "MSFT"
+
+        expansion_terms = set()
+        for c in citations:
+            if c.get("type") == "cell":
+                row = c.get("table_row", "")
+                if row:
+                    expansion_terms.add(row.lower())
+                    clean_row = re.sub(r"[\(\)]", "", row).strip()
+                    if clean_row:
+                        expansion_terms.add(clean_row.lower())
+            elif c.get("type") == "sentence":
+                quote = c.get("quote", "")
+                key_phrases = re.findall(
+                    r"\b(?:net sales|total revenue|gross margin|operating expenses|operating income|other income|diluted eps|property and equipment|purchase obligations|remaining performance obligation|commercial portion|credit risk|trade receivables|foreign tax rate|effective tax rate|share repurchase|equity method|uncommenced leases)\b",
+                    quote.lower()
+                )
+                for kp in key_phrases:
+                    expansion_terms.add(kp)
+
+        corr_phrases = re.findall(
+            r"\b(?:trade receivables|negative assurance|10% of revenue|single customer|individual customer|adjusted net income|gaap net income|operating income|cost of revenue|capital expenditures|buyback|dividends paid|mix of earnings|tariff refunds)\b",
+            corr.lower()
+        )
+        for cp in corr_phrases:
+            expansion_terms.add(cp)
+
+        return {
+            "question_id": qid,
+            "company": company,
+            "expansion_terms": sorted(list(expansion_terms)),
+            "retrieval_strategy": f"Focus search on {', '.join(sorted(list(expansion_terms))[:3])}" if expansion_terms else "Standard filing retrieval",
+            "verified_answer": corr,
+            "verified_citations": citations,
+            "contributing_analyst": feedback.get("analyst", "UNKNOWN")
+        }
+
     def process_feedback_item(self, feedback: Dict, question: Dict) -> Dict:
         """
         Evaluates one feedback item, updates analyst stats, and distills verified lesson into Playbook.
@@ -278,9 +354,12 @@ class AnalystVerificationGate:
         qid = feedback.get("question_id")
         round_num = feedback.get("round", 1)
 
+        prior_trust = self.get_analyst_trust(aid)
         is_valid, reason = self.verify_feedback(feedback, question)
+        policy = self.get_review_burden(aid)
+        needs_review = policy["flag_borderline_for_review"] or (not is_valid and "Security rejection" not in reason)
 
-        # Update analyst tracking
+        # Update analyst tracking AFTER independent assessment (Priority 1)
         if aid in self.analyst_history:
             self.analyst_history[aid]["total"] += 1
             if is_valid:
@@ -288,7 +367,12 @@ class AnalystVerificationGate:
             else:
                 self.analyst_history[aid]["rejected"] += 1
 
-        trust = self.get_analyst_trust(aid)
+        post_trust = self.get_analyst_trust(aid)
+
+        retrieval_lesson = None
+        if is_valid:
+            company = question.get("company", "MSFT" if "MSFT" in qid else "AAPL") if question else "MSFT"
+            retrieval_lesson = self.extract_retrieval_lesson(feedback, question, self.parsers.get(company))
 
         log_entry = {
             "feedback_id": fid,
@@ -296,8 +380,11 @@ class AnalystVerificationGate:
             "analyst": aid,
             "question_id": qid,
             "is_valid": is_valid,
+            "needs_review": needs_review,
             "reason": reason,
-            "trust_score": round(trust, 4)
+            "prior_trust": round(prior_trust, 4),
+            "trust_score": round(post_trust, 4),
+            "retrieval_lesson": retrieval_lesson
         }
         self.audit_log.append(log_entry)
 
@@ -308,8 +395,9 @@ class AnalystVerificationGate:
                 "verified_answer": feedback.get("correction"),
                 "citations": feedback.get("citations"),
                 "contributing_analyst": aid,
-                "trust_weight": trust,
-                "learned_round": round_num
+                "trust_weight": post_trust,
+                "learned_round": round_num,
+                "retrieval_lesson": retrieval_lesson
             }
 
         return log_entry

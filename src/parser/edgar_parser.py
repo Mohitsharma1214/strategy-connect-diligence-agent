@@ -47,7 +47,9 @@ class EdgarFilingParser:
         with open(self.filing_path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
 
-        self.soup = bs4.BeautifulSoup(content, "lxml")
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore")
+            self.soup = bs4.BeautifulSoup(content, "lxml")
         
         # 1. Extract and normalize narrative visible text
         # Filter script, style and noscript

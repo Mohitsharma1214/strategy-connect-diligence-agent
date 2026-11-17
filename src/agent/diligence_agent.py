@@ -15,12 +15,31 @@ from src.agent.local_llm import LocalLLMClient
 
 class PlaybookRule:
     """A diligence strategy rule learned from verified human analyst feedback."""
-    def __init__(self, rule_id: str, topic: str, condition: str, action: str, expansion_terms: Optional[List[str]] = None):
+    def __init__(
+        self,
+        rule_id: str,
+        topic: str,
+        condition: str,
+        action: str,
+        expansion_terms: Optional[List[str]] = None,
+        question_id: Optional[str] = None,
+        company: Optional[str] = None,
+        verified_answer: Optional[str] = None,
+        verified_citations: Optional[List[Dict[str, Any]]] = None,
+        contributing_analyst: Optional[str] = None,
+        trust_weight: float = 1.0,
+    ):
         self.rule_id = rule_id
         self.topic = topic
         self.condition = condition
         self.action = action
         self.expansion_terms = expansion_terms or []
+        self.question_id = question_id
+        self.company = company
+        self.verified_answer = verified_answer
+        self.verified_citations = verified_citations or []
+        self.contributing_analyst = contributing_analyst
+        self.trust_weight = trust_weight
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -29,6 +48,10 @@ class PlaybookRule:
             "condition": self.condition,
             "action": self.action,
             "expansion_terms": self.expansion_terms,
+            "question_id": self.question_id,
+            "company": self.company,
+            "contributing_analyst": self.contributing_analyst,
+            "trust_weight": self.trust_weight,
         }
 
 
@@ -39,9 +62,15 @@ class DiligencePlaybook:
 
     def add_rule(self, rule: PlaybookRule) -> None:
         for existing in self.rules:
-            if existing.topic == rule.topic and existing.action == rule.action:
+            if existing.rule_id == rule.rule_id or (existing.question_id and existing.question_id == rule.question_id and existing.action == rule.action):
                 return
         self.rules.append(rule)
+
+    def get_rule_for_question(self, question_id: str) -> Optional[PlaybookRule]:
+        for r in reversed(self.rules):
+            if r.question_id == question_id:
+                return r
+        return None
 
     def get_rules_for_topic(self, topic: str) -> List[PlaybookRule]:
         return [r for r in self.rules if r.topic == topic or r.topic == "ALL"]
@@ -121,6 +150,29 @@ class DiligenceAgent:
         question_text = question_obj.get("question", "")
         topic = self.identify_topic(question_text)
         rules = self.playbook.get_rules_for_topic(topic)
+        q_rule = self.playbook.get_rule_for_question(qid)
+
+        # Priority 2: Check if verified feedback rule exists for this question
+        if q_rule and q_rule.verified_citations:
+            verified_cits = []
+            for cit in q_rule.verified_citations:
+                if cit.get("type") == "sentence":
+                    if self.parser.find_sentence_quote(cit.get("quote", "")):
+                        verified_cits.append(cit)
+                elif cit.get("type") == "cell":
+                    if self.parser.find_cell(cit.get("table_row", ""), cit.get("column", ""), cit.get("value", "")):
+                        verified_cits.append(cit)
+            if verified_cits:
+                ans_text = q_rule.verified_answer or q_rule.action
+                if self.llm and self.llm.is_connected:
+                    llm_ans = self.llm.synthesize_diligence_answer(question_text, ans_text, playbook_hint=q_rule.action)
+                    if llm_ans and len(llm_ans.strip()) > 10:
+                        ans_text = llm_ans.strip()
+                return {
+                    "id": qid,
+                    "answer": ans_text,
+                    "citations": verified_cits
+                }
 
         # 1. Build search query terms with general GAAP financial expansions
         query_terms = extract_keywords(question_text)

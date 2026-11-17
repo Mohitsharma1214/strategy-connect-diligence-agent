@@ -1,5 +1,5 @@
 {
-  "execution_timestamp": "2026-11-17T11:37:26Z",
+  "execution_timestamp": "2026-11-17T11:59:21Z",
   "dataset": {
     "filings": [
       "msft-20260630.htm",
@@ -37,12 +37,12 @@
         "overall_accuracy": 0.0
       },
       "learn_metrics": {
-        "factual_accuracy": 0.125,
-        "numerical_accuracy": 0.125,
+        "factual_accuracy": 0.4375,
+        "numerical_accuracy": 0.5,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.125
+        "overall_accuracy": 0.4375
       },
-      "active_rules_count": 8
+      "active_rules_count": 5
     },
     "round_2": {
       "round": 2,
@@ -56,12 +56,12 @@
         "overall_accuracy": 0.0
       },
       "learn_metrics": {
-        "factual_accuracy": 0.125,
-        "numerical_accuracy": 0.125,
+        "factual_accuracy": 0.6875,
+        "numerical_accuracy": 0.6875,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.125
+        "overall_accuracy": 0.6875
       },
-      "active_rules_count": 16
+      "active_rules_count": 10
     },
     "round_3": {
       "round": 3,
@@ -75,12 +75,12 @@
         "overall_accuracy": 0.0
       },
       "learn_metrics": {
-        "factual_accuracy": 0.125,
-        "numerical_accuracy": 0.125,
+        "factual_accuracy": 0.9375,
+        "numerical_accuracy": 0.9375,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.125
+        "overall_accuracy": 0.9375
       },
-      "active_rules_count": 23
+      "active_rules_count": 13
     },
     "round_4": {
       "round": 4,
@@ -94,12 +94,12 @@
         "overall_accuracy": 0.0
       },
       "learn_metrics": {
-        "factual_accuracy": 0.125,
-        "numerical_accuracy": 0.125,
+        "factual_accuracy": 0.9375,
+        "numerical_accuracy": 0.9375,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.125
+        "overall_accuracy": 0.9375
       },
-      "active_rules_count": 32
+      "active_rules_count": 16
     }
   },
   "analyst_reliability": {
@@ -132,8 +132,11 @@
       "analyst": "AN-01",
       "question_id": "MSFT-L02",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Contradiction: Filing discloses negative assurance (no customer exceeded threshold).",
-      "trust_score": 0.3333
+      "prior_trust": 0.5,
+      "trust_score": 0.3333,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-003",
@@ -141,8 +144,11 @@
       "analyst": "AN-02",
       "question_id": "AAPL-L08",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Qualifying error: Asserts entire obligation is due when filing discloses partial amount.",
-      "trust_score": 0.5
+      "prior_trust": 0.6667,
+      "trust_score": 0.5,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-008",
@@ -150,8 +156,11 @@
       "analyst": "AN-01",
       "question_id": "AAPL-L01",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Temporal error: Asserts prior fiscal year figure (416161) instead of current fiscal year (478834).",
-      "trust_score": 0.25
+      "prior_trust": 0.3333,
+      "trust_score": 0.25,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-010",
@@ -159,8 +168,11 @@
       "analyst": "AN-01",
       "question_id": "AAPL-L04",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Direction error: Filing discloses higher costs, but correction claims costs fell.",
-      "trust_score": 0.2
+      "prior_trust": 0.25,
+      "trust_score": 0.2,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-013",
@@ -168,8 +180,11 @@
       "analyst": "AN-01",
       "question_id": "MSFT-L01",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Segment conflation: Sub-segment revenue (microsoft cloud) reported as total consolidated revenue.",
-      "trust_score": 0.1667
+      "prior_trust": 0.2,
+      "trust_score": 0.1667,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-014",
@@ -177,8 +192,11 @@
       "analyst": "AN-01",
       "question_id": "AAPL-L02",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Semantic error: Conflates trade receivables concentration with customer net sales concentration.",
-      "trust_score": 0.1429
+      "prior_trust": 0.1667,
+      "trust_score": 0.1429,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-016",
@@ -186,8 +204,11 @@
       "analyst": "AN-01",
       "question_id": "AAPL-L07",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Margin conflation: Segment gross margin rate conflated with share of total gross margin.",
-      "trust_score": 0.125
+      "prior_trust": 0.1429,
+      "trust_score": 0.125,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-020",
@@ -195,8 +216,11 @@
       "analyst": "AN-03",
       "question_id": "AAPL-L02",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Semantic error: Conflates trade receivables concentration with customer net sales concentration.",
-      "trust_score": 0.7778
+      "prior_trust": 0.875,
+      "trust_score": 0.7778,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-027",
@@ -204,8 +228,11 @@
       "analyst": "AN-01",
       "question_id": "MSFT-L04",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Magnitude error: Reported figure in millions is off by 1000x from table cell value.",
-      "trust_score": 0.2727
+      "prior_trust": 0.3,
+      "trust_score": 0.2727,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-028",
@@ -213,8 +240,11 @@
       "analyst": "AN-01",
       "question_id": "MSFT-L06",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Security rejection: Prompt injection / system override attempt detected.",
-      "trust_score": 0.25
+      "prior_trust": 0.2727,
+      "trust_score": 0.25,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-030",
@@ -222,8 +252,11 @@
       "analyst": "AN-03",
       "question_id": "MSFT-L06",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Metric ambiguity: Non-GAAP adjusted net income reported without required GAAP disclosure.",
-      "trust_score": 0.7857
+      "prior_trust": 0.8462,
+      "trust_score": 0.7857,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-033",
@@ -231,8 +264,11 @@
       "analyst": "AN-01",
       "question_id": "MSFT-L08",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Hallucination error: Entity 'Harbor' not disclosed in MSFT 10-K filing.",
-      "trust_score": 0.2308
+      "prior_trust": 0.25,
+      "trust_score": 0.2308,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-034",
@@ -240,8 +276,11 @@
       "analyst": "AN-03",
       "question_id": "AAPL-L05",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Citation mismatch: Attached citation does not reference segment 'greater china'.",
-      "trust_score": 0.7333
+      "prior_trust": 0.7857,
+      "trust_score": 0.7333,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-041",
@@ -249,8 +288,11 @@
       "analyst": "AN-01",
       "question_id": "MSFT-L07",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Temporal error: Misattributes prior fiscal year figure 18% to 2026 in respectively sequence.",
-      "trust_score": 0.2667
+      "prior_trust": 0.2857,
+      "trust_score": 0.2667,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-043",
@@ -258,8 +300,11 @@
       "analyst": "AN-01",
       "question_id": "AAPL-L03",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Temporal error: Asserts prior fiscal year figure (46.9%) instead of current fiscal year (48.8%).",
-      "trust_score": 0.2941
+      "prior_trust": 0.3125,
+      "trust_score": 0.2941,
+      "retrieval_lesson": null
     },
     {
       "feedback_id": "FB-048",
@@ -267,8 +312,11 @@
       "analyst": "AN-03",
       "question_id": "MSFT-L05",
       "is_valid": false,
+      "needs_review": true,
       "reason": "Temporal error: Misattributes prior fiscal year figure $13.0 billion to 2026 in respectively sequence.",
-      "trust_score": 0.7222
+      "prior_trust": 0.7647,
+      "trust_score": 0.7222,
+      "retrieval_lesson": null
     }
   ],
   "multi_seed_evaluation": {
