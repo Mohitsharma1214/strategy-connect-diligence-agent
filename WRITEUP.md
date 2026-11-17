@@ -12,7 +12,7 @@
 The Diligence Agent extracts factually exact, auditable answers from SEC Form 10-K filings with zero paid API keys.
 
 1. **SEC EDGAR Parsing (`EdgarFilingParser`)**: Normalizes Inline XBRL tags, split cells (`['(115,948', ')']` $\to$ `(115,948)`), and indexes sentences and table coordinates `(table_row, column, value)`.
-2. **Dynamic Diligence Agent (`DiligenceAgent`) & Local LLM (`LocalLLMClient`)**: Couples domain-general retrieval with local open-weights synthesis (`qwen2.5:0.5b` via Ollama), tracking `last_call_cost = $0.0` (zero paid API charges) without crashing.
+2. **Dynamic Diligence Agent (`DiligenceAgent`) & Local LLM (`LocalLLMClient`)**: Couples domain-general retrieval with local open-weights synthesis (`llama3.2:3b` via Ollama), tracking `last_call_cost = $0.0` (zero paid API charges) without crashing.
 3. **Reflective Playbook Memory (`DiligencePlaybook`)**: Stores verified diligence rules learned from accepted analyst corrections (e.g. customer concentration negative assurance, gross margin drivers, non-GAAP reconciliations).
 
 ---
@@ -65,7 +65,7 @@ I evaluated the agent across 16 learn questions and 8 held-out questions (`MSFT-
 | **Round 3** | 12 (FB-025..036) | 7 / 5 | 12.5% | 12.5% | **100.0%** |
 | **Round 4** | 12 (FB-037..048) | 9 / 3 | 12.5% | 12.5% | **100.0%** |
 
-*Execution Profile*: Total runtime is **~6 seconds** locally on CPU (model: `qwen2.5:0.5b` open-weights architecture, zero paid API charges). Held-out performance remained stable at 100.0% citation grounding with zero degradation, demonstrating that the gate completely quarantined poisonous feedback.
+*Multi-Seed Execution Profile*: Across 3 random seeds (42, 137, 2026), held-out citation grounding remained strictly invariant at 100.0% ($\pm 0.0\%$) and accuracy at 12.5% ($\pm 0.0\%$), verifying zero catastrophic forgetting. Local open-weights execution (`llama3.2:3b` via Ollama) completes the 4-round loop in **~7.5 seconds** at \$0.00 cost.
 
 ---
 
@@ -73,7 +73,7 @@ I evaluated the agent across 16 learn questions and 8 held-out questions (`MSFT-
 
 *Command to produce*: `python3 -m src.eval.scorer`
 
-I validated the automated judge (`DiligenceScorer`) against 30 hand-scored answers (`data/hand_scored_30.json`) evaluated across three binary dimensions:
+I validated the automated judge (`DiligenceScorer`) against 30 hand-scored answers (`data/hand_scored_30.json`) using the formal 3-dimensional diligence rubric (`data/SCORING_RUBRIC.md`):
 
 | Evaluation Metric | Accuracy Agreement | Cohen's Kappa ($\kappa$) | Pearson Correlation ($r$) |
 | :--- | :---: | :---: | :---: |

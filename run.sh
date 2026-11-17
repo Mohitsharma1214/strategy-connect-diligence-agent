@@ -16,6 +16,7 @@ fi
 export HOME="/tmp"
 export OLLAMA_MODELS="/tmp/ollama_models"
 export OLLAMA_HOST="http://127.0.0.1:11435"
+export LOCAL_LLM_MODEL="llama3.2:3b"
 
 # Check if Ollama daemon is available; launch background runner if not already active
 if command -v ollama >/dev/null 2>&1; then

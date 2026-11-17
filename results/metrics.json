@@ -1,5 +1,5 @@
 {
-  "execution_timestamp": "2026-11-17T09:45:13Z",
+  "execution_timestamp": "2026-11-17T11:16:27Z",
   "dataset": {
     "filings": [
       "msft-20260630.htm",
@@ -12,16 +12,16 @@
   },
   "baseline_round_0": {
     "learn": {
-      "factual_accuracy": 0.0625,
-      "numerical_accuracy": 0.0625,
+      "factual_accuracy": 0.125,
+      "numerical_accuracy": 0.125,
       "citation_grounding": 1.0,
-      "overall_accuracy": 0.0625
+      "overall_accuracy": 0.125
     },
     "held_out": {
-      "factual_accuracy": 0.0,
-      "numerical_accuracy": 0.0,
+      "factual_accuracy": 0.125,
+      "numerical_accuracy": 0.125,
       "citation_grounding": 1.0,
-      "overall_accuracy": 0.0
+      "overall_accuracy": 0.125
     }
   },
   "rounds": {
@@ -31,16 +31,16 @@
       "accepted": 8,
       "rejected": 4,
       "held_out_metrics": {
-        "factual_accuracy": 0.0,
-        "numerical_accuracy": 0.0,
+        "factual_accuracy": 0.125,
+        "numerical_accuracy": 0.125,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.0
+        "overall_accuracy": 0.125
       },
       "learn_metrics": {
-        "factual_accuracy": 0.0625,
-        "numerical_accuracy": 0.0625,
+        "factual_accuracy": 0.1875,
+        "numerical_accuracy": 0.1875,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.0625
+        "overall_accuracy": 0.1875
       },
       "active_rules_count": 8
     },
@@ -50,16 +50,16 @@
       "accepted": 8,
       "rejected": 4,
       "held_out_metrics": {
-        "factual_accuracy": 0.0,
-        "numerical_accuracy": 0.0,
+        "factual_accuracy": 0.125,
+        "numerical_accuracy": 0.125,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.0
+        "overall_accuracy": 0.125
       },
       "learn_metrics": {
-        "factual_accuracy": 0.0625,
-        "numerical_accuracy": 0.0625,
+        "factual_accuracy": 0.1875,
+        "numerical_accuracy": 0.1875,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.0625
+        "overall_accuracy": 0.1875
       },
       "active_rules_count": 16
     },
@@ -69,16 +69,16 @@
       "accepted": 7,
       "rejected": 5,
       "held_out_metrics": {
-        "factual_accuracy": 0.0,
-        "numerical_accuracy": 0.0,
+        "factual_accuracy": 0.125,
+        "numerical_accuracy": 0.125,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.0
+        "overall_accuracy": 0.125
       },
       "learn_metrics": {
-        "factual_accuracy": 0.0625,
-        "numerical_accuracy": 0.0625,
+        "factual_accuracy": 0.1875,
+        "numerical_accuracy": 0.1875,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.0625
+        "overall_accuracy": 0.1875
       },
       "active_rules_count": 23
     },
@@ -88,16 +88,16 @@
       "accepted": 9,
       "rejected": 3,
       "held_out_metrics": {
-        "factual_accuracy": 0.0,
-        "numerical_accuracy": 0.0,
+        "factual_accuracy": 0.125,
+        "numerical_accuracy": 0.125,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.0
+        "overall_accuracy": 0.125
       },
       "learn_metrics": {
-        "factual_accuracy": 0.0625,
-        "numerical_accuracy": 0.0625,
+        "factual_accuracy": 0.1875,
+        "numerical_accuracy": 0.1875,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.0625
+        "overall_accuracy": 0.1875
       },
       "active_rules_count": 32
     }
@@ -271,6 +271,45 @@
       "trust_score": 0.7222
     }
   ],
+  "multi_seed_evaluation": {
+    "seeds": [
+      42,
+      137,
+      2026
+    ],
+    "summary": {
+      "round_0": {
+        "held_out_accuracy_mean": 12.5,
+        "held_out_accuracy_std": 0.0,
+        "citation_grounding_mean": 100.0,
+        "citation_grounding_std": 0.0
+      },
+      "round_1": {
+        "held_out_accuracy_mean": 12.5,
+        "held_out_accuracy_std": 0.0,
+        "citation_grounding_mean": 100.0,
+        "citation_grounding_std": 0.0
+      },
+      "round_2": {
+        "held_out_accuracy_mean": 12.5,
+        "held_out_accuracy_std": 0.0,
+        "citation_grounding_mean": 100.0,
+        "citation_grounding_std": 0.0
+      },
+      "round_3": {
+        "held_out_accuracy_mean": 12.5,
+        "held_out_accuracy_std": 0.0,
+        "citation_grounding_mean": 100.0,
+        "citation_grounding_std": 0.0
+      },
+      "round_4": {
+        "held_out_accuracy_mean": 12.5,
+        "held_out_accuracy_std": 0.0,
+        "citation_grounding_mean": 100.0,
+        "citation_grounding_std": 0.0
+      }
+    }
+  },
   "hand_scored_30_validation": {
     "n_samples": 30,
     "factual_accuracy": {

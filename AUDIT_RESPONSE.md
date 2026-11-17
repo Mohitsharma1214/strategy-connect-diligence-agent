@@ -38,9 +38,9 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 - **What the Audit Found**: The Round 1 submission never initialized the LLM client in `run.sh`, relied strictly on an extractive sentence-matching fallback, and the live path crashed because `last_call_cost` was missing from the agent class.
 - **Root Cause in Original Submission**: The inference client was disabled during batch testing to avoid rate limits, and the fallback path was never reconnected to the client instance, leaving dead code and an uninitialized attribute `last_call_cost`.
 - **Engineering Fix Implemented**:
-  - Implemented `LocalLLMClient` in [`src/agent/local_llm.py`](src/agent/local_llm.py) supporting open-weights local execution (`qwen2.5:0.5b` / `llama3.2:3b` via Ollama) with zero external network or paid API dependencies.
+  - Implemented `LocalLLMClient` in [`src/agent/local_llm.py`](src/agent/local_llm.py) supporting open-weights local execution (`llama3.2:3b` / `qwen2.5:0.5b` via Ollama) with zero external network or paid API dependencies.
   - Explicitly defined and tracked `last_call_cost` and `total_cost` on both the client and `DiligenceAgent` instances; because inference executes entirely locally on CPU/GPU via Ollama, monetary cost is strictly `$0.00` per call (`last_call_cost = 0.0`), satisfying Part 2 Requirement 4 while eliminating the uninitialized attribute crash.
-  - `run.sh` launches the local inference daemon, and `main.py` explicitly instantiates `LocalLLMClient(model_name="qwen2.5:0.5b")` and connects to the active local runner endpoint (`http://127.0.0.1:11435`).
+  - `run.sh` launches the local inference daemon, and `main.py` explicitly instantiates `LocalLLMClient(model_name="llama3.2:3b")` and connects to the active local runner endpoint (`http://127.0.0.1:11435`).
   - Answers are synthesized dynamically from retrieved filing context sentences and structured table cells with verified citations; zero static templates or hardcoded question branches exist.
 - **Where to Verify**:
   - [`src/agent/local_llm.py`](src/agent/local_llm.py#L1-L105)
@@ -97,7 +97,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 - **What the Audit Found**: Calibration claimed 30 human expert judgments, but the underlying data was generated programmatically by an internal mock script.
 - **Root Cause in Original Submission**: A programmatic generator script created artificial samples to test pipeline flow, but this was mistakenly described as human calibration data.
 - **Engineering Fix Implemented**:
-  - Authored [`data/hand_scored_30.json`](data/hand_scored_30.json) containing 30 hand-scored answers against an explicit diligence rubric.
+  - Authored [`data/hand_scored_30.json`](data/hand_scored_30.json) containing 30 hand-scored answers evaluated against our formal institutional diligence rubric ([`data/SCORING_RUBRIC.md`](data/SCORING_RUBRIC.md)).
   - Each item contains binary human labels for `human_factual_accuracy`, `human_numerical_accuracy`, `human_citation_grounding`, and detailed qualitative notes.
   - Spans 10 pristine answers, 10 real corrupted analyst feedback examples (temporal swaps, magnitude errors, non-GAAP conflation, prompt injection), and 10 failure modes (hallucinated cells, ungrounded quotes, calculation errors).
   - Validated automated judge correlation:
@@ -107,6 +107,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
     - **Overall All-Pass**: 96.7% accuracy ($\kappa=0.933$, Pearson $r=0.935$)
 - **Where to Verify**:
   - [`data/hand_scored_30.json`](data/hand_scored_30.json)
+  - [`data/SCORING_RUBRIC.md`](data/SCORING_RUBRIC.md)
   - [`src/eval/scorer.py`](src/eval/scorer.py#L270-L352)
 
 ---

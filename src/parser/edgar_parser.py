@@ -57,12 +57,27 @@ class EdgarFilingParser:
         self.raw_text = self.soup.get_text(separator=" ")
         self.collapsed_text = collapse_whitespace(self.raw_text)
         
-        # Segment into clean sentences, filtering out XBRL taxonomy blobs and uninformative chunks
-        raw_sentences = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", self.collapsed_text)
-        self.sentences = [
-            s.strip() for s in raw_sentences 
-            if 15 <= len(s.strip()) <= 1500 and "fasb.org" not in s and "http://" not in s and "0000789019" not in s
-        ]
+        # Segment into clean sentences from both block elements (paragraphs/divs) and narrative flow
+        block_text = self.soup.get_text(separator="\n")
+        block_lines = [collapse_whitespace(l) for l in block_text.split("\n") if len(collapse_whitespace(l)) >= 15]
+
+        sentences_set = set()
+        sentences_list = []
+
+        def add_sentences_from(text_source: str):
+            raw_s = re.split(r"(?<=[.!?])\s+(?=[A-Z0-9])", text_source)
+            for s in raw_s:
+                s_clean = s.strip()
+                if 15 <= len(s_clean) <= 1500 and "fasb.org" not in s_clean and "http://" not in s_clean and "0000789019" not in s_clean:
+                    if s_clean not in sentences_set:
+                        sentences_set.add(s_clean)
+                        sentences_list.append(s_clean)
+
+        for bl in block_lines:
+            add_sentences_from(bl)
+        add_sentences_from(self.collapsed_text)
+
+        self.sentences = sentences_list
 
         # 2. Extract structured financial tables
         self._extract_tables()

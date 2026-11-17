@@ -95,16 +95,19 @@ class LocalLLMClient:
         Prompts local LLM to synthesize concise diligence answer strictly grounded in filing context.
         """
         system_prompt = (
-            "You are an institutional financial diligence assistant evaluating SEC Form 10-K disclosures. "
-            "Your answers must be concise, mathematically accurate, and strictly grounded in the provided context. "
-            "Never hallucinate numbers. If context reports negative assurance, state it clearly."
+            "You are an expert financial diligence analyst evaluating SEC Form 10-K filings.\n"
+            "Guidelines:\n"
+            "1. Answer the question directly and concisely based ONLY on the provided Filing Context.\n"
+            "2. If the context states negative assurance (e.g. 'no sales to an individual customer accounted for more than 10%'), do NOT say revenue is concentrated; state clearly that no single customer exceeded 10%.\n"
+            "3. Cite exact figures, percentages, dollar amounts, and fiscal years verbatim from the context.\n"
+            "4. Do not invent or extrapolate numbers. Keep your answer under 3 sentences."
         )
 
         user_prompt = f"Question: {question}\n\n"
         if playbook_rule:
-            user_prompt += f"Playbook Guidance: {playbook_rule}\n\n"
+            user_prompt += f"Playbook Strategy: {playbook_rule}\n\n"
         user_prompt += f"Filing Context:\n\"\"\"\n{context}\n\"\"\"\n\n"
-        user_prompt += "Concise Diligence Answer:"
+        user_prompt += "Direct Diligence Answer:"
 
         return self.generate(user_prompt, system=system_prompt)
 
