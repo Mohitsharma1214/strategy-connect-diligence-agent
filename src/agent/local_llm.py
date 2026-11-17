@@ -90,10 +90,19 @@ class LocalLLMClient:
         except Exception:
             return None
 
-    def synthesize_diligence_answer(self, question: str, context: str, playbook_rule: Optional[str] = None) -> Optional[str]:
+    def synthesize_diligence_answer(
+        self,
+        question: str,
+        context: str,
+        playbook_rule: Optional[str] = None,
+        playbook_hint: Optional[str] = None
+    ) -> Optional[str]:
         """
         Prompts local LLM to synthesize concise diligence answer strictly grounded in filing context.
         """
+
+        
+        rule = playbook_rule or playbook_hint
         system_prompt = (
             "You are an expert financial diligence analyst evaluating SEC Form 10-K filings.\n"
             "Guidelines:\n"
@@ -104,8 +113,8 @@ class LocalLLMClient:
         )
 
         user_prompt = f"Question: {question}\n\n"
-        if playbook_rule:
-            user_prompt += f"Playbook Strategy: {playbook_rule}\n\n"
+        if rule:
+            user_prompt += f"Playbook Strategy: {rule}\n\n"
         user_prompt += f"Filing Context:\n\"\"\"\n{context}\n\"\"\"\n\n"
         user_prompt += "Direct Diligence Answer:"
 

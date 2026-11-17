@@ -164,10 +164,6 @@ class DiligenceAgent:
                         verified_cits.append(cit)
             if verified_cits:
                 ans_text = q_rule.verified_answer or q_rule.action
-                if self.llm and self.llm.is_connected:
-                    llm_ans = self.llm.synthesize_diligence_answer(question_text, ans_text, playbook_hint=q_rule.action)
-                    if llm_ans and len(llm_ans.strip()) > 10:
-                        ans_text = llm_ans.strip()
                 return {
                     "id": qid,
                     "answer": ans_text,
