@@ -188,37 +188,42 @@ def run_full_reproduction() -> None:
     rounds_data = {}
     for r in range(1, 5):
         round_items = [fb for fb in feedback_items if fb.get("round") == r]
-        accepted_count = 0
+        cleared_count = 0
+        needs_review_count = 0
         rejected_count = 0
 
         for fb in round_items:
             q_obj = q_map.get(fb.get("question_id"), {})
             log_entry = gate.process_feedback_item(fb, q_obj)
             if log_entry["is_valid"]:
-                accepted_count += 1
-                lesson = log_entry.get("retrieval_lesson") or {}
-                company = q_obj.get("company", "MSFT" if "MSFT" in fb.get("question_id", "") else "AAPL")
-                rule = PlaybookRule(
-                    rule_id=f"RULE-{fb['id']}",
-                    topic=agent_msft.identify_topic(fb["correction"]),
-                    condition=f"Verified analyst correction ({fb['analyst']})",
-                    action=fb["correction"],
-                    expansion_terms=lesson.get("expansion_terms", []),
-                    question_id=fb.get("question_id"),
-                    company=company,
-                    verified_answer=fb.get("correction"),
-                    verified_citations=fb.get("citations"),
-                    contributing_analyst=fb.get("analyst"),
-                    trust_weight=log_entry.get("trust_score", 1.0)
-                )
-                # Priority 3: Company-aware routing to prevent cross-company contamination
-                if company == "MSFT":
-                    playbook_msft.add_rule(rule)
-                elif company == "AAPL":
-                    playbook_aapl.add_rule(rule)
+                if log_entry.get("needs_review"):
+                    needs_review_count += 1
+                    # Quarantined for partner review; not automatically ingested into active playbook
                 else:
-                    playbook_msft.add_rule(rule)
-                    playbook_aapl.add_rule(rule)
+                    cleared_count += 1
+                    lesson = log_entry.get("retrieval_lesson") or {}
+                    company = q_obj.get("company", "MSFT" if "MSFT" in fb.get("question_id", "") else "AAPL")
+                    rule = PlaybookRule(
+                        rule_id=f"RULE-{fb['id']}",
+                        topic=agent_msft.identify_topic(fb["correction"]),
+                        condition=f"Verified analyst correction ({fb['analyst']})",
+                        action=fb["correction"],
+                        expansion_terms=lesson.get("expansion_terms", []),
+                        question_id=fb.get("question_id"),
+                        company=company,
+                        verified_answer=fb.get("correction"),
+                        verified_citations=fb.get("citations"),
+                        contributing_analyst=fb.get("analyst"),
+                        trust_weight=log_entry.get("trust_score", 1.0)
+                    )
+                    # Priority 3: Company-aware routing with unknown-company quarantine
+                    if company == "MSFT":
+                        playbook_msft.add_rule(rule)
+                    elif company == "AAPL":
+                        playbook_aapl.add_rule(rule)
+                    else:
+                        # Unknown company: quarantined, never shared across playbooks
+                        pass
             else:
                 rejected_count += 1
 
@@ -227,14 +232,16 @@ def run_full_reproduction() -> None:
         rounds_data[f"round_{r}"] = {
             "round": r,
             "feedback_items": len(round_items),
-            "accepted": accepted_count,
+            "accepted": cleared_count + needs_review_count,
+            "cleared": cleared_count,
+            "needs_review": needs_review_count,
             "rejected": rejected_count,
             "held_out_metrics": held_eval,
             "learn_metrics": learn_eval,
-            "active_rules_count": len(playbook_msft.rules)
+            "active_rules_count": len(playbook_msft.rules) + len(playbook_aapl.rules)
         }
-        print(f" • Round {r}: {len(round_items)} feedback items processed -> {accepted_count} Accepted, {rejected_count} Rejected (Noise Filter).")
-        print(f"            Playbook Updated: +{accepted_count} verified rules distilled | Total Active Playbook Rules: {len(playbook_msft.rules)}")
+        print(f" • Round {r}: {len(round_items)} feedback items processed -> {cleared_count} Cleared, {needs_review_count} NeedsReview, {rejected_count} Rejected.")
+        print(f"            Playbook Updated: +{cleared_count} cleared rules distilled | Total Active Playbook Rules: {len(playbook_msft.rules) + len(playbook_aapl.rules)}")
         print(f"            Held-Out Accuracy: Overall={held_eval['overall_accuracy']*100:.1f}% (Grounding={held_eval['citation_grounding']*100:.1f}%, Factual={held_eval['factual_accuracy']*100:.1f}%)")
 
     # Step 6: Analyst Reliability Analysis
@@ -287,7 +294,7 @@ def run_full_reproduction() -> None:
             for fb in shuffled:
                 q_obj = q_map.get(fb.get("question_id"), {})
                 log_entry = s_gate.process_feedback_item(fb, q_obj)
-                if log_entry["is_valid"]:
+                if log_entry["is_valid"] and not log_entry.get("needs_review"):
                     lesson = log_entry.get("retrieval_lesson") or {}
                     company = q_obj.get("company", "MSFT" if "MSFT" in fb.get("question_id", "") else "AAPL")
                     rule = PlaybookRule(
@@ -303,14 +310,13 @@ def run_full_reproduction() -> None:
                         contributing_analyst=fb.get("analyst"),
                         trust_weight=log_entry.get("trust_score", 1.0)
                     )
-                    # Priority 3: Company-aware routing in multi-seed evaluation
+                    # Priority 3: Company-aware routing with unknown-company quarantine
                     if company == "MSFT":
                         s_pb_msft.add_rule(rule)
                     elif company == "AAPL":
                         s_pb_aapl.add_rule(rule)
                     else:
-                        s_pb_msft.add_rule(rule)
-                        s_pb_aapl.add_rule(rule)
+                        pass
 
             r_a, r_g = eval_s_split(held_out_questions)
             seed_round_held_acc[r].append(r_a)

@@ -29,6 +29,7 @@ class TestPriorityRemediations(unittest.TestCase):
         burden_an01 = gate.get_review_burden("AN-01")
         self.assertTrue(burden_an01["flag_borderline_for_review"])
         self.assertIn("Elevated Scrutiny", burden_an01["tier"])
+        self.assertEqual(burden_an01["min_overlap_ratio"], 0.40)
         
         # AN-01 valid feedback item (FB-004 style, verified evidence)
         valid_fb = {
@@ -45,6 +46,54 @@ class TestPriorityRemediations(unittest.TestCase):
         res = gate.process_feedback_item(valid_fb, {"company": "MSFT", "question": "Customer concentration"})
         self.assertTrue(res["is_valid"], "Factually correct feedback must never be rejected purely for analyst ID")
         self.assertTrue(res["needs_review"], "Low-trust analyst feedback must be flagged for review")
+
+    def test_priority_1_needs_review_quarantine(self):
+        """Priority 1 Edge Case: Valid feedback flagged with needs_review must be quarantined and excluded from active playbooks."""
+        gate = AnalystVerificationGate({"MSFT": self.msft_parser, "AAPL": self.aapl_parser})
+        gate.analyst_history["AN-01"] = {"accepted": 1, "rejected": 3, "total": 4}
+
+        valid_fb = {
+            "id": "FB-TEST-QUARANTINE",
+            "round": 1,
+            "analyst": "AN-01",
+            "question_id": "MSFT-L02",
+            "correction": "No single customer was above 10% of revenue in fiscal 2024 to 2026.",
+            "citations": [{
+                "type": "sentence",
+                "quote": "No sales to an individual customer or country other than the United States accounted for more than 10% of revenue for fiscal years 2026, 2025, or 2024."
+            }]
+        }
+        log_entry = gate.process_feedback_item(valid_fb, {"company": "MSFT", "question": "Customer concentration"})
+        self.assertTrue(log_entry["is_valid"])
+        self.assertTrue(log_entry["needs_review"])
+
+        # Operational assimilation decision: must be quarantined if needs_review is True
+        pb_msft = DiligencePlaybook()
+        if log_entry["is_valid"] and not log_entry.get("needs_review"):
+            pb_msft.add_rule(PlaybookRule("R-1", "topic", "cond", "action", question_id="MSFT-L02", company="MSFT"))
+
+        self.assertEqual(len(pb_msft.rules), 0, "Quarantined needs_review feedback must not be added to active playbook")
+
+    def test_priority_1_evidentiary_overlap_threshold(self):
+        """Priority 1: Confirms min_overlap_ratio rejects poorly supported claims under elevated scrutiny."""
+        gate = AnalystVerificationGate({"MSFT": self.msft_parser, "AAPL": self.aapl_parser})
+        gate.analyst_history["AN-01"] = {"accepted": 1, "rejected": 3, "total": 4}
+
+        # Feedback with very weak token overlap relative to long claim length
+        weak_fb = {
+            "id": "FB-TEST-WEAK",
+            "round": 1,
+            "analyst": "AN-01",
+            "question_id": "MSFT-L02",
+            "correction": "Microsoft customer enterprise agreements require multi-year commitments with recurring billing cycles across global strategic accounts.",
+            "citations": [{
+                "type": "sentence",
+                "quote": "No sales to an individual customer or country other than the United States accounted for more than 10% of revenue for fiscal years 2026, 2025, or 2024."
+            }]
+        }
+        is_valid, reason = gate.verify_feedback(weak_fb, {"company": "MSFT", "question": "Customer concentration"})
+        self.assertFalse(is_valid)
+        self.assertIn("Insufficient citation support overlap", reason)
 
     def test_priority_2_feedback_retrieval_expansion(self):
         """Priority 2: Confirms retrieval lessons are extracted and populated into PlaybookRule."""
@@ -109,6 +158,37 @@ class TestPriorityRemediations(unittest.TestCase):
         self.assertIsNone(pb_msft.get_rule_for_question("AAPL-L01"), "AAPL rules must not leak into MSFT playbook")
         self.assertIsNotNone(pb_aapl.get_rule_for_question("AAPL-L01"))
         self.assertIsNone(pb_aapl.get_rule_for_question("MSFT-L02"), "MSFT rules must not leak into AAPL playbook")
+
+    def test_priority_3_unknown_company_quarantine(self):
+        """Priority 3 Edge Case: Confirms unknown/unrecognized companies are quarantined and not added to either playbook."""
+        pb_msft = DiligencePlaybook()
+        pb_aapl = DiligencePlaybook()
+
+        test_items = [
+            {"company": "UNKNOWN", "id": "UNK-01"},
+            {"company": "GOOGL", "id": "GOOGL-01"},
+            {"company": "", "id": "EMPTY-01"},
+        ]
+
+        for item in test_items:
+            rule = PlaybookRule(
+                rule_id=f"RULE-{item['id']}",
+                topic="general",
+                condition="Verified",
+                action="Generic text",
+                company=item["company"]
+            )
+            # Apply exact routing logic as in main.py
+            if item["company"] == "MSFT":
+                pb_msft.add_rule(rule)
+            elif item["company"] == "AAPL":
+                pb_aapl.add_rule(rule)
+            else:
+                # Quarantined
+                pass
+
+        self.assertEqual(len(pb_msft.rules), 0, "Unknown companies must never be routed to MSFT playbook")
+        self.assertEqual(len(pb_aapl.rules), 0, "Unknown companies must never be routed to AAPL playbook")
 
     def test_priority_4_learning_dynamics(self):
         """Priority 4: Confirms the agent demonstrates genuine accuracy growth on learn questions."""

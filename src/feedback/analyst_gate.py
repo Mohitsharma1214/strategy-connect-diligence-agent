@@ -180,6 +180,13 @@ class AnalystVerificationGate:
         if not overlap and not num_overlap:
             return False, "Grounding error: Attached citations do not support or reference the correction claim."
 
+        # Operational evidentiary threshold (Priority 1): Check min overlap ratio required by analyst trust policy
+        policy = self.get_review_burden(aid)
+        total_claim_tokens = max(len(content_tokens) + len(metric_numbers), 1)
+        overlap_ratio = (len(overlap) + len(num_overlap)) / total_claim_tokens
+        if overlap_ratio < policy["min_overlap_ratio"]:
+            return False, f"Grounding error: Insufficient citation support overlap ({overlap_ratio:.1%} < required {policy['min_overlap_ratio']:.1%} for {policy['tier']})."
+
         # 3b. Entity Hallucination Check (Capitalized proper nouns absent from 10-K filing)
         stopwords = {
             "total", "net", "sales", "revenue", "gross", "margin", "fiscal", "apple", "microsoft",
@@ -357,7 +364,11 @@ class AnalystVerificationGate:
         prior_trust = self.get_analyst_trust(aid)
         is_valid, reason = self.verify_feedback(feedback, question)
         policy = self.get_review_burden(aid)
-        needs_review = policy["flag_borderline_for_review"] or (not is_valid and "Security rejection" not in reason)
+
+        # Operational review policy:
+        # If valid but from a low-trust analyst (trust < 0.45), flag as needs_review
+        # so it is quarantined for partner confirmation before entering automated playbook.
+        needs_review = bool(is_valid and policy["flag_borderline_for_review"])
 
         # Update analyst tracking AFTER independent assessment (Priority 1)
         if aid in self.analyst_history:
