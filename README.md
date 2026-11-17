@@ -25,7 +25,7 @@ The auditor can test the pipeline against any SEC Form 10-K HTML filing and ques
 The output file strictly conforms to StrategyConnect's specification (`examples/answer.example.json` and `examples/answer_cell.example.json`) in line-delimited JSON (`.jsonl`).
 
 ### 3. Automated Judge Validation Against 30 Hand-Scored Answers
-To inspect statistical agreement between the automated scorer and human expert hand-labels across Factual Accuracy, Numerical Accuracy, and Citation Grounding:
+To inspect statistical agreement between the automated scorer and candidate-authored manual labels across Factual Accuracy, Numerical Accuracy, and Citation Grounding (note: manual labels were authored by the candidate; independent reviewer validation has not yet been completed):
 
 ```bash
 python3 -m src.eval.scorer
@@ -66,7 +66,7 @@ The epistemic verification gate rejected **17 out of 48 corrupt items (35.4% noi
 | **Total** | **48** | **27** | **4** | **17** | **64.6%** | **35.4% Noise Rejected (17 rejected; 4 quarantined for partner review)** |
 
 ### Automated Judge Alignment (30 Hand-Scored Benchmark)
-Validated against [`data/hand_scored_30.json`](data/hand_scored_30.json):
+Validated against 30 candidate-authored hand-scored answers in [`data/hand_scored_30.json`](data/hand_scored_30.json) (independent reviewer validation has not yet been completed):
 - **Citation Grounding Agreement**: **100.0%** ($\kappa = 1.000$, Pearson $r = 1.000$)
 - **Factual Accuracy Agreement**: **96.7%** ($\kappa = 0.933$, Pearson $r = 0.935$)
 - **Numerical Accuracy Agreement**: **90.0%** ($\kappa = 0.794$, Pearson $r = 0.796$)
@@ -85,7 +85,7 @@ strategy-connect-diligence-agent/
 ├── main.py                    # Production pipeline, CLI driver, and experiment orchestrator
 ├── data/
 │   ├── SCORING_RUBRIC.md      # Formal 3-dimensional diligence scoring rubric
-│   ├── hand_scored_30.json    # 30 hand-scored answers with human labels & rationale notes
+│   ├── hand_scored_30.json    # 30 hand-scored answers with candidate-authored manual labels & rationale notes
 │   └── sc-diligence/          # Official StrategyConnect dataset
 │       ├── filings/           # Real 10-K HTML filings (msft-20260630.htm, aapl-20260926.htm)
 │       ├── questions.json     # 24 official diligence questions (16 learn, 8 held-out)

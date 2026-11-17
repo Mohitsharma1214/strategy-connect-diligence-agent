@@ -1,6 +1,6 @@
 # Institutional Diligence Scoring Rubric
 
-This rubric establishes the formal ground-truth evaluation standards for validating the automated diligence judge (`DiligenceScorer`) against the 30 hand-scored human expert benchmarks (`data/hand_scored_30.json`), strictly fulfilling Requirement 6 of Take-Home Part 2.
+This rubric establishes the formal ground-truth evaluation standards for validating the automated diligence judge (`DiligenceScorer`) against the 30 candidate-authored hand-scored answers (`data/hand_scored_30.json`), fulfilling Requirement 6 of Take-Home Part 2. Note: These manual benchmark labels were authored directly by the candidate (Mohit Sharma) to establish a rigorous evaluation ground truth; independent reviewer validation has not yet been completed.
 
 ---
 
@@ -54,9 +54,9 @@ If an answer fails on any single dimension, the overall score is **0**.
 
 ---
 
-## 3. Human vs. Automated Scorer Concordance Standards
+## 3. Candidate Manual Labels vs. Automated Scorer Concordance Standards
 
-The automated evaluation harness (`src/eval/scorer.py`) replicates this rubric algorithmically. Alignment between human expert labels and automated scores is measured using:
+The automated evaluation harness (`src/eval/scorer.py`) replicates this rubric algorithmically. Alignment between candidate-authored manual labels and automated scores is measured using:
 1. **Percentage Agreement**: Raw concordant fraction ($A = \frac{\text{Agreements}}{\text{Total}}$).
 2. **Cohen's Kappa ($\kappa$)**: Chance-corrected inter-rater agreement:
    $$\kappa = \frac{p_o - p_e}{1 - p_e}$$

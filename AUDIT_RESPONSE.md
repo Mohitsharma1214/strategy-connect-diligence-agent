@@ -97,8 +97,8 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 - **What the Audit Found**: Calibration claimed 30 human expert judgments, but the underlying data was generated programmatically by an internal mock script.
 - **Root Cause in Original Submission**: A programmatic generator script created artificial samples to test pipeline flow, but this was mistakenly described as human calibration data.
 - **Engineering Fix Implemented**:
-  - Authored [`data/hand_scored_30.json`](data/hand_scored_30.json) containing 30 hand-scored answers evaluated against our formal institutional diligence rubric ([`data/SCORING_RUBRIC.md`](data/SCORING_RUBRIC.md)).
-  - Each item contains binary human labels for `human_factual_accuracy`, `human_numerical_accuracy`, `human_citation_grounding`, and detailed qualitative notes.
+  - Authored [`data/hand_scored_30.json`](data/hand_scored_30.json) containing 30 candidate-authored hand-scored answers evaluated against our formal institutional diligence rubric ([`data/SCORING_RUBRIC.md`](data/SCORING_RUBRIC.md)). Note: These manual benchmark labels were authored directly by the candidate (Mohit Sharma); independent reviewer validation has not yet been completed.
+  - Each item contains candidate-authored manual labels for `human_factual_accuracy`, `human_numerical_accuracy`, `human_citation_grounding`, and detailed qualitative notes.
   - Spans 10 pristine answers, 10 real corrupted analyst feedback examples (temporal swaps, magnitude errors, non-GAAP conflation, prompt injection), and 10 failure modes (hallucinated cells, ungrounded quotes, calculation errors).
   - Validated automated judge correlation:
     - **Citation Grounding**: 100.0% accuracy ($\kappa=1.000$, Pearson $r=1.000$)

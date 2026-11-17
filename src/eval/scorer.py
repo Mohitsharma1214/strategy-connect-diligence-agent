@@ -289,7 +289,7 @@ def evaluate_hand_scored_benchmark(benchmark_path: str = "data/hand_scored_30.js
                                   msft_filing: str = "data/sc-diligence/filings/msft-20260630.htm",
                                   aapl_filing: str = "data/sc-diligence/filings/aapl-20260926.htm") -> Dict[str, Any]:
     """
-    Evaluates the automated judge against 30 hand-scored human labels.
+    Evaluates the automated judge against 30 candidate-authored hand-scored labels.
     """
     with open(benchmark_path) as f:
         items = json.load(f)

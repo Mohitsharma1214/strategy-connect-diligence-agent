@@ -342,7 +342,7 @@ def run_full_reproduction() -> None:
     print(f"   Citation Grounding: {multi_seed_summary['round_4']['citation_grounding_mean']:.1f}% (±{multi_seed_summary['round_4']['citation_grounding_std']:.1f}%) across all rounds and seeds.")
 
     # Step 7: Hand-Scored 30 Benchmark Validation
-    print("\n[Stage 5/5] Validating Automated Scorer Against 30 Hand-Scored Human Labels...")
+    print("\n[Stage 5/5] Validating Automated Scorer Against 30 Candidate-Authored Hand-Scored Answers...")
     hand_eval = evaluate_hand_scored_benchmark(hand_scored_file, questions_file, msft_filing, aapl_filing)
     print(f" • Factual Accuracy Agreement:   Accuracy={hand_eval['factual_accuracy_metrics']['accuracy']*100:.1f}%, Kappa={hand_eval['factual_accuracy_metrics']['kappa']:.3f}, Pearson r={hand_eval['factual_accuracy_metrics']['pearson']:.3f}")
     print(f" • Numerical Accuracy Agreement: Accuracy={hand_eval['numerical_accuracy_metrics']['accuracy']*100:.1f}%, Kappa={hand_eval['numerical_accuracy_metrics']['kappa']:.3f}, Pearson r={hand_eval['numerical_accuracy_metrics']['pearson']:.3f}")
