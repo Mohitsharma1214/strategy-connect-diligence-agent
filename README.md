@@ -44,23 +44,23 @@ All experiments run on **StrategyConnect’s official production dataset** (`sc-
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Round 0 (Baseline)** | 0 | 0 / 0 | 12.5% | 0.0% | **100.0%** |
 | **Round 1** | 12 (FB-001..012) | 8 / 4 | **43.8%** | 0.0% | **100.0%** |
-| **Round 2** | 12 (FB-013..024) | 8 / 4 | **68.8%** | 0.0% | **100.0%** |
-| **Round 3** | 12 (FB-025..036) | 7 / 5 | **93.8%** | 0.0% | **100.0%** |
-| **Round 4** | 12 (FB-037..048) | 9 / 3 | **93.8%** | 0.0% | **100.0%** |
+| **Round 2** | 12 (FB-013..024) | 7 / 5 | **75.0%** | 0.0% | **100.0%** |
+| **Round 3** | 12 (FB-025..036) | 5 (2 rev) / 5 | **93.8%** | 0.0% | **100.0%** |
+| **Round 4** | 12 (FB-037..048) | 7 (2 rev) / 3 | **93.8%** | 0.0% | **100.0%** |
 
 ### Multi-Seed Sensitivity Profile
 Across 3 random seeds (`[42, 137, 2026]`) testing stochastic feedback order permutations:
-- **Held-Out Citation Grounding**: **100.0% $\pm$ 0.0%** (invariant across all seeds and rounds).
-- **Held-Out Accuracy**: **0.0% $\pm$ 0.0%** (strictly isolated, zero data leakage or snooping).
 - **Learn Accuracy Growth**: Measurably improves from **12.5% $\to$ 93.8%** as verified corrections and retrieval strategies are assimilated.
+- **Held-Out Citation Grounding**: **100.0% $\pm$ 0.0%** (invariant across all seeds and rounds).
+- **Held-Out Strict Factual Accuracy**: **0.0% $\pm$ 0.0%** (questions and answers kept isolated from feedback learning; confirms zero data leakage, while demonstrating that localized feedback rules do not yet achieve generalized retrieval transfer to unseen line items).
 - **Local Open-Weights Execution**: `llama3.2:3b` via Ollama executes the 4-round pipeline in ~7.5 seconds at \$0.00 cost.
 
 ### Analyst Reliability & Forensic Audit
-The epistemic verification gate intercepted **16 out of 48 corrupt items (33.3% noise rejection rate)** without rejecting valid accounting corrections:
+The epistemic verification gate intercepted **17 out of 48 corrupt items (35.4% noise rejection rate)** while quarantining low-trust submissions for review:
 
 | Analyst ID | Total Items | Accepted | Rejected | Empirical Reliability | Primary Failure Modes |
 | :---: | :---: | :---: | :---: | :---: | :--- |
-| **`AN-01`** | 16 | 5 | 11 | **31.2%** | Prompt injection (`FB-028`), temporal swaps, $1,000\times$ scale error (`FB-027`), metric conflation |
+| **`AN-01`** | 16 | 4 | 12 | **25.0%** | Prompt injection (`FB-028`), temporal swaps, $1,000\times$ scale error (`FB-027`), low overlap |
 | **`AN-02`** | 16 | 15 | 1 | **93.8%** | Institutional grade; precision table citations. Only 1 rejection (`FB-003`: "all payable" vs $\$82.7\text{B}$) |
 | **`AN-03`** | 16 | 12 | 4 | **75.0%** | Subtle accounting errors (receivables vs revenue, non-GAAP conflation, citing Japan for China) |
 
