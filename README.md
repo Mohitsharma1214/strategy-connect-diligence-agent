@@ -52,7 +52,7 @@ All experiments run on **StrategyConnect’s official production dataset** (`sc-
 Across 3 random seeds (`[42, 137, 2026]`) testing stochastic feedback order permutations:
 - **Learn Accuracy Growth**: Measurably improves from **12.5% $\to$ 93.8%** as verified corrections and retrieval strategies are assimilated.
 - **Held-Out Citation Grounding**: **100.0% $\pm$ 0.0%** (invariant across all seeds and rounds).
-- **Held-Out Strict Factual Accuracy**: **0.0% $\pm$ 0.0%** (questions and answers kept isolated from feedback learning; confirms zero data leakage, while demonstrating that localized feedback rules do not yet achieve generalized retrieval transfer to unseen line items).
+- **Held-Out Strict Factual Accuracy**: **0.0% $\pm$ 0.0%** (the evaluation design keeps held-out questions and reference answers isolated from feedback processing; observed results are consistent with that separation, while demonstrating that localized feedback rules do not yet achieve generalized retrieval transfer to unseen line items).
 - **Local Open-Weights Execution**: `llama3.2:3b` via Ollama executes the 4-round pipeline in ~7.5 seconds at \$0.00 cost.
 
 ### Analyst Reliability & Forensic Audit
