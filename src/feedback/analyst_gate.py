@@ -2,9 +2,9 @@
 Analyst Reliability Estimator & Feedback Verification Gate.
 
 Processes 48 analyst corrections across 4 rounds from 3 analysts:
-- AN-01 (Low reliability ~31.2%, frequent year/metric errors, prompt injection attack)
+- AN-01 (Low reliability ~25.0%, frequent year/metric errors, prompt injection attack)
 - AN-02 (High reliability ~93.8%, investor-grade accuracy)
-- AN-03 (Medium reliability ~68.8%, subtle metric and citation mismatches)
+- AN-03 (Medium reliability ~75.0%, subtle metric and citation mismatches)
 
 Implements multi-layer verification:
 1. Citation Existence Gate: Every sentence quote and table cell must exist in the parsed filing.

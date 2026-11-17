@@ -147,17 +147,17 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
   ```
 - **Expected Output**:
   ```text
-  {'AN-01': {'total': 16, 'accepted': 5, 'rejected': 11, 'empirical_reliability': 0.3125, 'bayesian_trust': 0.3333}, 'AN-02': {'total': 16, 'accepted': 15, 'rejected': 1, 'empirical_reliability': 0.9375, 'bayesian_trust': 0.8889}, 'AN-03': {'total': 16, 'accepted': 12, 'rejected': 4, 'empirical_reliability': 0.75, 'bayesian_trust': 0.7222}}
+  {'AN-01': {'total': 16, 'accepted': 4, 'rejected': 12, 'empirical_reliability': 0.25, 'bayesian_trust': 0.2778}, 'AN-02': {'total': 16, 'accepted': 15, 'rejected': 1, 'empirical_reliability': 0.9375, 'bayesian_trust': 0.8889}, 'AN-03': {'total': 16, 'accepted': 12, 'rejected': 4, 'empirical_reliability': 0.75, 'bayesian_trust': 0.7222}}
   ```
 - **What the Audit Found**: The 20% noise filter was tested against artificial random string perturbations rather than realistic accounting/analyst errors.
 - **Root Cause in Original Submission**: Synthetic noise was injected via randomized word swaps, which failed to reflect institutional diligence failure modes.
 - **Engineering Fix Implemented**:
   - Tested against the full 48-item institutional analyst feedback dataset (`data/sc-diligence/feedback.jsonl`).
   - Evaluated three realistic analyst personas across 4 rounds:
-    - **`AN-01` (Adversarial/Careless)**: 31.2% reliability (5/16 accepted, 11 rejected). Injected temporal errors, magnitude errors ($115.9M vs $115,948M), metric conflations, and an explicit prompt injection attack (`FB-028`).
+    - **`AN-01` (Adversarial/Careless)**: 25.0% reliability (4 accepted/quarantined, 12 rejected). Injected temporal errors, magnitude errors ($115.9M vs $115,948M), metric conflations, and an explicit prompt injection attack (`FB-028`).
     - **`AN-02` (Institutional Grade)**: 93.8% reliability (15/16 accepted, 1 rejected). Precision disclosures, rejected only on `FB-003` for asserting "all payable" when $82.7B was payable.
     - **`AN-03` (Subtle Accounting Mistakes)**: 75.0% reliability (12/16 accepted, 4 rejected). Intercepted on receivables conflation, Non-GAAP conflation, and mismatched citations.
-  - Overall Noise Interception Rate: **33.3% (16 corrupt items rejected out of 48)**.
+  - Overall Noise Interception Rate: **35.4% (17 corrupt items rejected out of 48; 4 quarantined for human review)**.
 - **Where to Verify**:
   - [`src/feedback/analyst_gate.py`](src/feedback/analyst_gate.py#L45-L185)
   - [`results/metrics.json`](results/metrics.json) (under `"analyst_reliability"` and `"rejected_feedback_details"`)
@@ -260,7 +260,7 @@ While the verification gate achieves a **100% precision score across all 48 inst
 
 ### 3. Production Roadmap for Institutional Robustness (With Additional Data & Compute)
 To scale this architecture to institutional production across hundreds of filings and thousands of analyst updates:
-- **Phase 1: Deterministic First-Line Fast Sieve (Implemented)**: Halts 90%+ of bad inputs (prompt injections, missing citations, unit scale errors, year swaps) at zero inference latency and zero API cost.
+- **Phase 1: Deterministic First-Line Fast Sieve (Implemented)**: Halts corrupt inputs (prompt injections, missing citations, unit scale errors, year swaps) at zero API cost and low latency.
 - **Phase 2: Local NLI Entailment Judge (Roadmap)**: Deploy a lightweight cross-encoder / NLI model (e.g. `DeBERTa-v3` or fine-tuned `qwen2.5`) where:
   - **Premise**: Verbatim SEC 10-K citation text.
   - **Hypothesis**: Analyst correction text.

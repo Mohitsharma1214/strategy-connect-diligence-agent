@@ -1,5 +1,5 @@
 {
-  "execution_timestamp": "2026-11-17T12:49:27Z",
+  "execution_timestamp": "2026-11-17T13:20:57Z",
   "dataset": {
     "filings": [
       "msft-20260630.htm",
@@ -12,16 +12,16 @@
   },
   "baseline_round_0": {
     "learn": {
+      "factual_accuracy": 0.1875,
+      "numerical_accuracy": 0.1875,
+      "citation_grounding": 1.0,
+      "overall_accuracy": 0.1875
+    },
+    "held_out": {
       "factual_accuracy": 0.125,
       "numerical_accuracy": 0.125,
       "citation_grounding": 1.0,
       "overall_accuracy": 0.125
-    },
-    "held_out": {
-      "factual_accuracy": 0.0,
-      "numerical_accuracy": 0.0,
-      "citation_grounding": 1.0,
-      "overall_accuracy": 0.0
     }
   },
   "rounds": {
@@ -39,10 +39,10 @@
         "overall_accuracy": 0.0
       },
       "learn_metrics": {
-        "factual_accuracy": 0.4375,
-        "numerical_accuracy": 0.5,
+        "factual_accuracy": 0.5,
+        "numerical_accuracy": 0.5625,
         "citation_grounding": 1.0,
-        "overall_accuracy": 0.4375
+        "overall_accuracy": 0.5
       },
       "active_rules_count": 8
     },
@@ -347,7 +347,7 @@
     ],
     "summary": {
       "round_0": {
-        "held_out_accuracy_mean": 0.0,
+        "held_out_accuracy_mean": 12.5,
         "held_out_accuracy_std": 0.0,
         "citation_grounding_mean": 100.0,
         "citation_grounding_std": 0.0

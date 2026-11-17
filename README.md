@@ -116,11 +116,11 @@ strategy-connect-diligence-agent/
 
 ## 🔬 System Limitations & Future Production Roadmap
 
-While the verification gate successfully intercepts **100% of corrupt submissions (16/48) in StrategyConnect's benchmark**, production deployment requires recognizing edge-case boundaries:
+While the verification gate rejects **17 of 48 submissions (35.4% noise rate)** and quarantines **4 low-trust submissions for human review**, production deployment requires recognizing edge-case boundaries:
 - **Current Solved Capabilities**: Catches verbatim citation hallucinations, 1,000x magnitude unit errors ($115.9M vs $115,948M), multi-year temporal misattributions, negative assurance contradictions, and prompt injection attacks.
 - **Theoretical Edge-Case Boundaries**: Pure deterministic lexical gates cannot fully catch subtle causal narrative fabrications (e.g., claiming a tax hike was due to "executive compensation" when the citation cites "earnings mix") or synthetic unquoted percentage deltas.
 - **Production Scaling Roadmap**:
-  1. *Deterministic Fast Sieve (Implemented)*: Filters 90%+ of corrupt feedback at zero inference cost and zero latency.
+  1. *Deterministic Fast Sieve (Implemented)*: Filters corrupt feedback (ungrounded citations, magnitude errors, temporal misattributions, prompt injections) at zero API cost and low latency.
   2. *Local NLI Entailment Judge (Roadmap)*: Pipes surviving feedback through a local cross-encoder (`DeBERTa-v3` or structured local LLM) classifying Premise (10-K quote) vs Hypothesis (Analyst claim) as `Entailment`, `Neutral/Unsupported`, or `Contradiction`.
   3. *Symbolic Delta Verifier (Roadmap)*: Validates unquoted growth metrics using an AST arithmetic checker.
   4. *Multivariate Bayesian Trust (Roadmap)*: Expands Beta priors into topic-conditional trust matrices across distinct GAAP categories.
