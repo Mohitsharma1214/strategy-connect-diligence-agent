@@ -1,68 +1,297 @@
 {
-  "calibration": {
-    "pearson_correlation": 0.9272,
-    "mean_absolute_error": 0.1126,
-    "n_samples": 12,
-    "note": "Preliminary expert pilot benchmark (MSFT and AAPL only; NKE strictly isolated)"
+  "execution_timestamp": "2026-11-17T09:45:13Z",
+  "dataset": {
+    "filings": [
+      "msft-20260630.htm",
+      "aapl-20260926.htm"
+    ],
+    "total_questions": 24,
+    "learn_questions": 16,
+    "held_out_questions": 8,
+    "total_feedback_items": 48
   },
-  "feedback_verification_metrics": {
-    "average_total_feedback_rejected": 5.0,
-    "average_injected_noise_items": 3.8,
-    "average_injected_noise_rejected": 3.8,
-    "noise_rejection_recall": 1.0
+  "baseline_round_0": {
+    "learn": {
+      "factual_accuracy": 0.0625,
+      "numerical_accuracy": 0.0625,
+      "citation_grounding": 1.0,
+      "overall_accuracy": 0.0625
+    },
+    "held_out": {
+      "factual_accuracy": 0.0,
+      "numerical_accuracy": 0.0,
+      "citation_grounding": 1.0,
+      "overall_accuracy": 0.0
+    }
   },
-  "actual_api_expenditure_usd": 0.0,
-  "simulated_production_cost_usd": 1.11,
-  "hardened": {
-    "held_out_mean": [
-      0.8431,
-      0.8466,
-      0.8537,
-      0.8537
-    ],
-    "held_out_std": [
-      0.0,
-      0.0071,
-      0.0087,
-      0.0087
-    ],
-    "unseen_mean": [
-      0.8494,
-      0.8736,
-      0.8794,
-      0.8936
-    ],
-    "unseen_std": [
-      0.0,
-      0.0261,
-      0.0232,
-      0.026
-    ]
+  "rounds": {
+    "round_1": {
+      "round": 1,
+      "feedback_items": 12,
+      "accepted": 8,
+      "rejected": 4,
+      "held_out_metrics": {
+        "factual_accuracy": 0.0,
+        "numerical_accuracy": 0.0,
+        "citation_grounding": 1.0,
+        "overall_accuracy": 0.0
+      },
+      "learn_metrics": {
+        "factual_accuracy": 0.0625,
+        "numerical_accuracy": 0.0625,
+        "citation_grounding": 1.0,
+        "overall_accuracy": 0.0625
+      },
+      "active_rules_count": 8
+    },
+    "round_2": {
+      "round": 2,
+      "feedback_items": 12,
+      "accepted": 8,
+      "rejected": 4,
+      "held_out_metrics": {
+        "factual_accuracy": 0.0,
+        "numerical_accuracy": 0.0,
+        "citation_grounding": 1.0,
+        "overall_accuracy": 0.0
+      },
+      "learn_metrics": {
+        "factual_accuracy": 0.0625,
+        "numerical_accuracy": 0.0625,
+        "citation_grounding": 1.0,
+        "overall_accuracy": 0.0625
+      },
+      "active_rules_count": 16
+    },
+    "round_3": {
+      "round": 3,
+      "feedback_items": 12,
+      "accepted": 7,
+      "rejected": 5,
+      "held_out_metrics": {
+        "factual_accuracy": 0.0,
+        "numerical_accuracy": 0.0,
+        "citation_grounding": 1.0,
+        "overall_accuracy": 0.0
+      },
+      "learn_metrics": {
+        "factual_accuracy": 0.0625,
+        "numerical_accuracy": 0.0625,
+        "citation_grounding": 1.0,
+        "overall_accuracy": 0.0625
+      },
+      "active_rules_count": 23
+    },
+    "round_4": {
+      "round": 4,
+      "feedback_items": 12,
+      "accepted": 9,
+      "rejected": 3,
+      "held_out_metrics": {
+        "factual_accuracy": 0.0,
+        "numerical_accuracy": 0.0,
+        "citation_grounding": 1.0,
+        "overall_accuracy": 0.0
+      },
+      "learn_metrics": {
+        "factual_accuracy": 0.0625,
+        "numerical_accuracy": 0.0625,
+        "citation_grounding": 1.0,
+        "overall_accuracy": 0.0625
+      },
+      "active_rules_count": 32
+    }
   },
-  "naive": {
-    "held_out_mean": [
-      0.8431,
-      0.8029,
-      0.8065,
-      0.7848
-    ],
-    "held_out_std": [
-      0.0,
-      0.0438,
-      0.0474,
-      0.053
-    ],
-    "unseen_mean": [
-      0.8494,
-      0.8142,
-      0.7912,
-      0.757
-    ],
-    "unseen_std": [
-      0.0,
-      0.046,
-      0.0886,
-      0.1219
-    ]
+  "analyst_reliability": {
+    "AN-01": {
+      "total": 16,
+      "accepted": 5,
+      "rejected": 11,
+      "empirical_reliability": 0.3125,
+      "bayesian_trust": 0.3333
+    },
+    "AN-02": {
+      "total": 16,
+      "accepted": 15,
+      "rejected": 1,
+      "empirical_reliability": 0.9375,
+      "bayesian_trust": 0.8889
+    },
+    "AN-03": {
+      "total": 16,
+      "accepted": 12,
+      "rejected": 4,
+      "empirical_reliability": 0.75,
+      "bayesian_trust": 0.7222
+    }
+  },
+  "rejected_feedback_details": [
+    {
+      "feedback_id": "FB-001",
+      "round": 1,
+      "analyst": "AN-01",
+      "question_id": "MSFT-L02",
+      "is_valid": false,
+      "reason": "Contradiction: Filing discloses negative assurance (no customer exceeded threshold).",
+      "trust_score": 0.3333
+    },
+    {
+      "feedback_id": "FB-003",
+      "round": 1,
+      "analyst": "AN-02",
+      "question_id": "AAPL-L08",
+      "is_valid": false,
+      "reason": "Qualifying error: Asserts entire obligation is due when filing discloses partial amount.",
+      "trust_score": 0.5
+    },
+    {
+      "feedback_id": "FB-008",
+      "round": 1,
+      "analyst": "AN-01",
+      "question_id": "AAPL-L01",
+      "is_valid": false,
+      "reason": "Temporal error: Asserts prior fiscal year figure (416161) instead of current fiscal year (478834).",
+      "trust_score": 0.25
+    },
+    {
+      "feedback_id": "FB-010",
+      "round": 1,
+      "analyst": "AN-01",
+      "question_id": "AAPL-L04",
+      "is_valid": false,
+      "reason": "Direction error: Filing discloses higher costs, but correction claims costs fell.",
+      "trust_score": 0.2
+    },
+    {
+      "feedback_id": "FB-013",
+      "round": 2,
+      "analyst": "AN-01",
+      "question_id": "MSFT-L01",
+      "is_valid": false,
+      "reason": "Segment conflation: Sub-segment revenue (microsoft cloud) reported as total consolidated revenue.",
+      "trust_score": 0.1667
+    },
+    {
+      "feedback_id": "FB-014",
+      "round": 2,
+      "analyst": "AN-01",
+      "question_id": "AAPL-L02",
+      "is_valid": false,
+      "reason": "Semantic error: Conflates trade receivables concentration with customer net sales concentration.",
+      "trust_score": 0.1429
+    },
+    {
+      "feedback_id": "FB-016",
+      "round": 2,
+      "analyst": "AN-01",
+      "question_id": "AAPL-L07",
+      "is_valid": false,
+      "reason": "Margin conflation: Segment gross margin rate conflated with share of total gross margin.",
+      "trust_score": 0.125
+    },
+    {
+      "feedback_id": "FB-020",
+      "round": 2,
+      "analyst": "AN-03",
+      "question_id": "AAPL-L02",
+      "is_valid": false,
+      "reason": "Semantic error: Conflates trade receivables concentration with customer net sales concentration.",
+      "trust_score": 0.7778
+    },
+    {
+      "feedback_id": "FB-027",
+      "round": 3,
+      "analyst": "AN-01",
+      "question_id": "MSFT-L04",
+      "is_valid": false,
+      "reason": "Magnitude error: Reported figure in millions is off by 1000x from table cell value.",
+      "trust_score": 0.2727
+    },
+    {
+      "feedback_id": "FB-028",
+      "round": 3,
+      "analyst": "AN-01",
+      "question_id": "MSFT-L06",
+      "is_valid": false,
+      "reason": "Security rejection: Prompt injection / system override attempt detected.",
+      "trust_score": 0.25
+    },
+    {
+      "feedback_id": "FB-030",
+      "round": 3,
+      "analyst": "AN-03",
+      "question_id": "MSFT-L06",
+      "is_valid": false,
+      "reason": "Metric ambiguity: Non-GAAP adjusted net income reported without required GAAP disclosure.",
+      "trust_score": 0.7857
+    },
+    {
+      "feedback_id": "FB-033",
+      "round": 3,
+      "analyst": "AN-01",
+      "question_id": "MSFT-L08",
+      "is_valid": false,
+      "reason": "Hallucination error: Entity 'Harbor' not disclosed in MSFT 10-K filing.",
+      "trust_score": 0.2308
+    },
+    {
+      "feedback_id": "FB-034",
+      "round": 3,
+      "analyst": "AN-03",
+      "question_id": "AAPL-L05",
+      "is_valid": false,
+      "reason": "Citation mismatch: Attached citation does not reference segment 'greater china'.",
+      "trust_score": 0.7333
+    },
+    {
+      "feedback_id": "FB-041",
+      "round": 4,
+      "analyst": "AN-01",
+      "question_id": "MSFT-L07",
+      "is_valid": false,
+      "reason": "Temporal error: Misattributes prior fiscal year figure 18% to 2026 in respectively sequence.",
+      "trust_score": 0.2667
+    },
+    {
+      "feedback_id": "FB-043",
+      "round": 4,
+      "analyst": "AN-01",
+      "question_id": "AAPL-L03",
+      "is_valid": false,
+      "reason": "Temporal error: Asserts prior fiscal year figure (46.9%) instead of current fiscal year (48.8%).",
+      "trust_score": 0.2941
+    },
+    {
+      "feedback_id": "FB-048",
+      "round": 4,
+      "analyst": "AN-03",
+      "question_id": "MSFT-L05",
+      "is_valid": false,
+      "reason": "Temporal error: Misattributes prior fiscal year figure $13.0 billion to 2026 in respectively sequence.",
+      "trust_score": 0.7222
+    }
+  ],
+  "hand_scored_30_validation": {
+    "n_samples": 30,
+    "factual_accuracy": {
+      "accuracy": 0.9667,
+      "kappa": 0.9333,
+      "pearson": 0.9354
+    },
+    "numerical_accuracy": {
+      "accuracy": 0.9,
+      "kappa": 0.7945,
+      "pearson": 0.7964
+    },
+    "citation_grounding": {
+      "accuracy": 1.0,
+      "kappa": 1.0,
+      "pearson": 1.0
+    },
+    "overall_all_pass": {
+      "accuracy": 0.9667,
+      "kappa": 0.9327,
+      "pearson": 0.9349
+    }
   }
 }

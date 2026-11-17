@@ -11,7 +11,7 @@ Hybrid Domain-Guided & Evidence-Derived Learning Mechanism:
    - Diffs agent prediction against verified analyst correction.
    - Classifies error mode using financial domain taxonomies: omission of qualifying footnotes, accounting revisions, or negative assurance disclosures.
 3. Evidence-Derived Strategy Formulation:
-   - Dynamically distills informative retrieval terms directly from the verified cited sentences (e.g. 'useful life', 'freight', 'markdowns', 'wholesale').
+   - Dynamically distills informative retrieval terms directly from the verified cited sentences (e.g. 'useful life', 'depreciation', 'amortization', 'inventory').
    - Generalizes to unseen companies (e.g. Nike) without memorizing company-specific entities.
 """
 
@@ -187,19 +187,19 @@ class DiligencePlaybook:
         clean_corr = re.sub(r"\[[A-Z]+:S\d+\]", "", correction).lower()
         if any(term in clean_corr for term in ["10%", "no single customer", "largest customer", "threshold"]):
             error_type = "OMISSION_NEGATIVE_ASSURANCE"
-            key_expansions = ["no single customer", "10%", "largest customer", "concentration", "threshold", "wholesale"]
-        elif any(term in clean_corr for term in ["useful life", "depreciation", "estimate", "markdowns", "freight"]):
+            key_expansions = ["no single customer", "10%", "largest customer", "concentration", "threshold"]
+        elif any(term in clean_corr for term in ["useful life", "depreciation", "estimate", "cost of sales", "operating expense"]):
             error_type = "OMISSION_ACCOUNTING_AND_COST_DRIVERS"
-            key_expansions = ["useful life", "depreciation", "estimate", "markdowns", "freight", "gross margin"]
+            key_expansions = ["useful life", "depreciation", "estimate", "cost of sales", "operating expense", "gross margin"]
         elif any(term in clean_corr for term in ["foreign exchange", "constant currency", "currency", "headwind"]):
             error_type = "OMISSION_FX_HEADWIND"
             key_expansions = ["foreign exchange", "constant currency", "headwinds", "currency"]
         elif any(term in clean_corr for term in ["repurchased", "dividends", "share repurchases", "diluted"]):
             error_type = "OMISSION_CAPITAL_RETURN_BREAKDOWN"
             key_expansions = ["repurchased", "dividends", "share repurchases", "diluted"]
-        elif any(term in clean_corr for term in ["contract manufacturers", "outsourced", "vietnam", "china", "indonesia"]):
+        elif any(term in clean_corr for term in ["contract manufacturers", "outsourced", "manufacturing", "supply chain"]):
             error_type = "OMISSION_SUPPLY_CHAIN_GEOGRAPHY"
-            key_expansions = ["contract manufacturers", "outsourced", "vietnam", "china", "indonesia"]
+            key_expansions = ["contract manufacturers", "outsourced", "manufacturing", "supply chain"]
         else:
             error_type = "OMISSION_GRANULAR_FOOTNOTE"
             key_expansions = informative_terms[:5]

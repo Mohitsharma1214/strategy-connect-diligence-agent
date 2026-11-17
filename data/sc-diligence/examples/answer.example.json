@@ -1,0 +1,10 @@
+{
+  "id": "MSFT-H01",
+  "answer": "Azure and other cloud services revenue increased 41% in fiscal 2026.",
+  "citations": [
+    {
+      "type": "sentence",
+      "quote": "Azure and other cloud services revenue increased 41%."
+    }
+  ]
+}

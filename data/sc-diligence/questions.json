@@ -1,0 +1,466 @@
+[
+  {
+    "id": "MSFT-L01",
+    "company": "MSFT",
+    "split": "learn",
+    "question": "How fast did Microsoft's total revenue grow in fiscal 2026, and what drove it?",
+    "reference_answer": "Revenue grew $50.1 billion or 18%, to $331.8 billion, driven by growth in Microsoft Cloud.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "Revenue increased $50.1 billion or 18% driven by growth in Microsoft Cloud."
+      }
+    ]
+  },
+  {
+    "id": "MSFT-L02",
+    "company": "MSFT",
+    "split": "learn",
+    "question": "How concentrated is Microsoft's revenue among its customers?",
+    "reference_answer": "No individual customer accounted for more than 10% of revenue in fiscal 2026, 2025 or 2024.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "No sales to an individual customer or country other than the United States accounted for more than 10% of revenue for fiscal years 2026, 2025, or 2024."
+      }
+    ]
+  },
+  {
+    "id": "MSFT-L03",
+    "company": "MSFT",
+    "split": "learn",
+    "question": "What happened to Intelligent Cloud gross margin in fiscal 2026?",
+    "reference_answer": "Gross margin rose $13.8 billion or 21%, driven by Azure, but gross margin percentage fell because of continued AI infrastructure investment and the mix shift to Azure, partly offset by Azure efficiency gains.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "Gross margin increased $13.8 billion or 21% driven by growth in Azure."
+      },
+      {
+        "type": "sentence",
+        "quote": "Gross margin percentage decreased driven by the continued investments in AI infrastructure as well as sales mix shift to Azure, offset in part by efficiency gains in Azure."
+      }
+    ]
+  },
+  {
+    "id": "MSFT-L04",
+    "company": "MSFT",
+    "split": "learn",
+    "question": "By what percentage did Microsoft's additions to property and equipment grow in fiscal 2026?",
+    "reference_answer": "Additions to property and equipment rose from $64,551 million to $115,948 million, an increase of about 79.6%.",
+    "reference_citations": [
+      {
+        "type": "cell",
+        "table_row": "Additions to property and equipment",
+        "column": "2026",
+        "value": "(115,948)"
+      },
+      {
+        "type": "cell",
+        "table_row": "Additions to property and equipment",
+        "column": "2025",
+        "value": "(64,551)"
+      }
+    ]
+  },
+  {
+    "id": "MSFT-L05",
+    "company": "MSFT",
+    "split": "learn",
+    "question": "How much stock did Microsoft repurchase under its repurchase program in fiscal 2026?",
+    "reference_answer": "36 million shares for $16.7 billion under the repurchase program (31 million shares for $13.0 billion in fiscal 2025).",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "During fiscal years 2026 and 2025, we repurchased 36 million shares and 31 million shares of our common stock for $16.7 billion and $13.0 billion, respectively, through our share repurchase program."
+      }
+    ]
+  },
+  {
+    "id": "MSFT-L06",
+    "company": "MSFT",
+    "split": "learn",
+    "question": "How did the OpenAI investment affect Microsoft's fiscal 2026 net income?",
+    "reference_answer": "Other income included $6.5 billion of net gains from OpenAI investments, which increased net income by $5.0 billion and diluted EPS by $0.67. GAAP net income was $133,749 million; adjusted net income excluding OpenAI was $128,786 million.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "Other income (expense), net included $6.5 billion of net gains and $4.8 billion of net losses for fiscal years 2026 and 2025, respectively, from investments in OpenAI, primarily net recognized gains (losses) on our equity method investment reflected in Other, net."
+      },
+      {
+        "type": "sentence",
+        "quote": "Current year net income and diluted EPS were positively impacted by net gains from investments in OpenAI, which resulted in an increase in net income and diluted EPS of $5.0 billion and $0.67, respectively."
+      },
+      {
+        "type": "cell",
+        "table_row": "Net income",
+        "column": "2026",
+        "value": "133,749"
+      },
+      {
+        "type": "cell",
+        "table_row": "Adjusted net income (non-GAAP)",
+        "column": "2026",
+        "value": "128,786"
+      }
+    ]
+  },
+  {
+    "id": "MSFT-L07",
+    "company": "MSFT",
+    "split": "learn",
+    "question": "What was Microsoft's effective tax rate in fiscal 2026, and why did it change?",
+    "reference_answer": "19%, up from 18%, mainly due to changes in the mix of earnings and tax expenses between the U.S. and foreign countries.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "Our effective tax rate for fiscal years 2026 and 2025 was 19% and 18%, respectively."
+      },
+      {
+        "type": "sentence",
+        "quote": "The increase in our effective tax rate was primarily due to changes in the mix of our earnings and tax expenses between the U.S. and foreign countries."
+      }
+    ]
+  },
+  {
+    "id": "MSFT-L08",
+    "company": "MSFT",
+    "split": "learn",
+    "question": "How did Microsoft's commercial remaining performance obligation change?",
+    "reference_answer": "It increased 84% to $678 billion.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "Commercial remaining performance obligation increased 84% to $678 billion."
+      }
+    ]
+  },
+  {
+    "id": "MSFT-H01",
+    "company": "MSFT",
+    "split": "held_out",
+    "question": "How fast did Azure grow in fiscal 2026?",
+    "reference_answer": "Azure and other cloud services revenue increased 41%.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "Azure and other cloud services revenue increased 41%."
+      }
+    ]
+  },
+  {
+    "id": "MSFT-H02",
+    "company": "MSFT",
+    "split": "held_out",
+    "question": "What share of Microsoft's fiscal 2026 revenue came from OpenAI?",
+    "reference_answer": "The filing does not report revenue from OpenAI as a customer. It reports OpenAI as an equity method investment: $6.5 billion of net gains in other income, which raised net income by $5.0 billion.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "Other income (expense), net included $6.5 billion of net gains and $4.8 billion of net losses for fiscal years 2026 and 2025, respectively, from investments in OpenAI, primarily net recognized gains (losses) on our equity method investment reflected in Other, net."
+      },
+      {
+        "type": "sentence",
+        "quote": "Current year net income and diluted EPS were positively impacted by net gains from investments in OpenAI, which resulted in an increase in net income and diluted EPS of $5.0 billion and $0.67, respectively."
+      }
+    ]
+  },
+  {
+    "id": "MSFT-H03",
+    "company": "MSFT",
+    "split": "held_out",
+    "question": "How large are Microsoft's datacenter lease commitments that have not yet started?",
+    "reference_answer": "$329.1 billion of leases, primarily datacenters, had not yet commenced; they start between fiscal 2027 and fiscal 2033 with terms of 1 to 20 years.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "As of June 30, 2026, we had additional leases, primarily for datacenters, that had not yet commenced of $329.1 billion, with some arrangements subject to certain contractual conditions being met."
+      },
+      {
+        "type": "sentence",
+        "quote": "These leases will commence between fiscal year 2027 and fiscal year 2033 with lease terms of 1 year to 20 years."
+      }
+    ]
+  },
+  {
+    "id": "MSFT-H04",
+    "company": "MSFT",
+    "split": "held_out",
+    "question": "How many full-time employees did Microsoft have at the end of fiscal 2026?",
+    "reference_answer": "About 223,000: 121,000 in the U.S. and 102,000 internationally.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "As of June 30, 2026, we employed approximately 223,000 people on a full-time basis, 121,000 in the U.S. and 102,000 internationally."
+      }
+    ]
+  },
+  {
+    "id": "AAPL-L01",
+    "company": "AAPL",
+    "split": "learn",
+    "question": "How fast did Apple's total net sales grow in fiscal 2026?",
+    "reference_answer": "Total net sales rose 15% to $478,834 million from $416,161 million.",
+    "reference_citations": [
+      {
+        "type": "cell",
+        "table_row": "Total net sales",
+        "column": "2026",
+        "value": "478,834"
+      },
+      {
+        "type": "cell",
+        "table_row": "Total net sales",
+        "column": "2025",
+        "value": "416,161"
+      },
+      {
+        "type": "cell",
+        "table_row": "Total net sales",
+        "column": "Change (2026)",
+        "value": "15%"
+      }
+    ]
+  },
+  {
+    "id": "AAPL-L02",
+    "company": "AAPL",
+    "split": "learn",
+    "question": "How concentrated is Apple's revenue among its customers?",
+    "reference_answer": "Apple does not disclose revenue by customer. It discloses receivables concentration: one customer was 13% of trade receivables, and cellular network carriers together were 33% of trade receivables, at the end of fiscal 2026.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "As of both September 26, 2026 and September 27, 2025, the Company had one customer that represented 10% or more of total trade receivables, which accounted for 13% and 12%, respectively."
+      },
+      {
+        "type": "sentence",
+        "quote": "The Company’s third-party cellular network carriers accounted for 33% and 34% of total trade receivables as of September 26, 2026 and September 27, 2025, respectively."
+      }
+    ]
+  },
+  {
+    "id": "AAPL-L03",
+    "company": "AAPL",
+    "split": "learn",
+    "question": "What was Apple's total gross margin percentage in fiscal 2026?",
+    "reference_answer": "Total gross margin percentage was 46.9%, up from 46.2%.",
+    "reference_citations": [
+      {
+        "type": "cell",
+        "table_row": "Total gross margin percentage",
+        "column": "2026",
+        "value": "48.8%"
+      },
+      {
+        "type": "cell",
+        "table_row": "Total gross margin percentage",
+        "column": "2025",
+        "value": "46.9%"
+      }
+    ]
+  },
+  {
+    "id": "AAPL-L04",
+    "company": "AAPL",
+    "split": "learn",
+    "question": "Why did Apple's Products gross margin percentage change in fiscal 2026?",
+    "reference_answer": "It rose to 39.3% from 36.8%, mainly due to product mix and tariff refunds, partly offset by higher costs including memory.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "Products gross margin and gross margin percentage increased during 2026 compared to 2025 primarily due to product mix and tariff refunds, partially offset by higher costs, including memory."
+      },
+      {
+        "type": "cell",
+        "table_row": "Products (gross margin percentage)",
+        "column": "2026",
+        "value": "39.3%"
+      },
+      {
+        "type": "cell",
+        "table_row": "Products (gross margin percentage)",
+        "column": "2025",
+        "value": "36.8%"
+      }
+    ]
+  },
+  {
+    "id": "AAPL-L05",
+    "company": "AAPL",
+    "split": "learn",
+    "question": "What share of Apple's fiscal 2026 net sales came from Greater China, and how fast did it grow?",
+    "reference_answer": "Greater China net sales were $82,378 million, about 17.2% of total net sales of $478,834 million, up 28%.",
+    "reference_citations": [
+      {
+        "type": "cell",
+        "table_row": "Greater China (net sales by segment)",
+        "column": "2026",
+        "value": "82,378"
+      },
+      {
+        "type": "cell",
+        "table_row": "Greater China (net sales by segment)",
+        "column": "Change (2026)",
+        "value": "28%"
+      },
+      {
+        "type": "cell",
+        "table_row": "Total net sales",
+        "column": "2026",
+        "value": "478,834"
+      },
+      {
+        "type": "cell",
+        "table_row": "Total net sales",
+        "column": "2025",
+        "value": "416,161"
+      },
+      {
+        "type": "cell",
+        "table_row": "Total net sales",
+        "column": "Change (2026)",
+        "value": "15%"
+      }
+    ]
+  },
+  {
+    "id": "AAPL-L06",
+    "company": "AAPL",
+    "split": "learn",
+    "question": "How much did Apple return to shareholders through buybacks and dividends in fiscal 2026?",
+    "reference_answer": "Apple repurchased 297 million shares for $85.8 billion and paid $15.7 billion in dividends and dividend equivalents.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "During 2026, the Company repurchased 297 million shares of its common stock for $85.8 billion."
+      },
+      {
+        "type": "sentence",
+        "quote": "During 2026, the Company repurchased $85.8 billion of its common stock and paid dividends and dividend equivalents of $15.7 billion."
+      }
+    ]
+  },
+  {
+    "id": "AAPL-L07",
+    "company": "AAPL",
+    "split": "learn",
+    "question": "What share of Apple's total gross margin came from Services in fiscal 2026?",
+    "reference_answer": "Services gross margin was $93,943 million of $233,602 million total, about 40.2%.",
+    "reference_citations": [
+      {
+        "type": "cell",
+        "table_row": "Services (gross margin)",
+        "column": "2026",
+        "value": "93,943"
+      },
+      {
+        "type": "cell",
+        "table_row": "Total gross margin",
+        "column": "2026",
+        "value": "233,602"
+      }
+    ]
+  },
+  {
+    "id": "AAPL-L08",
+    "company": "AAPL",
+    "split": "learn",
+    "question": "How large are Apple's manufacturing purchase obligations?",
+    "reference_answer": "$89.7 billion, of which $82.7 billion is payable within 12 months.",
+    "reference_citations": [
+      {
+        "type": "sentence",
+        "quote": "As of September 26, 2026, the Company had manufacturing purchase obligations of $89.7 billion, with $82.7 billion payable within 12 months."
+      }
+    ]
+  },
+  {
+    "id": "AAPL-H01",
+    "company": "AAPL",
+    "split": "held_out",
+    "question": "How fast did Apple's research and development expense grow in fiscal 2026?",
+    "reference_answer": "R&D expense rose 32% to $45,765 million.",
+    "reference_citations": [
+      {
+        "type": "cell",
+        "table_row": "Research and development (operating expenses)",
+        "column": "2026",
+        "value": "45,765"
+      },
+      {
+        "type": "cell",
+        "table_row": "Research and development (operating expenses)",
+        "column": "Change (2026)",
+        "value": "32%"
+      }
+    ]
+  },
+  {
+    "id": "AAPL-H02",
+    "company": "AAPL",
+    "split": "held_out",
+    "question": "What was Apple's effective tax rate in fiscal 2026?",
+    "reference_answer": "17.0%, up from 15.6% in fiscal 2025.",
+    "reference_citations": [
+      {
+        "type": "cell",
+        "table_row": "Effective tax rate",
+        "column": "2026",
+        "value": "17.0%"
+      },
+      {
+        "type": "cell",
+        "table_row": "Effective tax rate",
+        "column": "2025",
+        "value": "15.6%"
+      }
+    ]
+  },
+  {
+    "id": "AAPL-H03",
+    "company": "AAPL",
+    "split": "held_out",
+    "question": "How did iPhone net sales perform in fiscal 2026?",
+    "reference_answer": "iPhone net sales rose 21% to $254,098 million, due to higher net sales of Pro models.",
+    "reference_citations": [
+      {
+        "type": "cell",
+        "table_row": "iPhone (net sales by category)",
+        "column": "2026",
+        "value": "254,098"
+      },
+      {
+        "type": "cell",
+        "table_row": "iPhone (net sales by category)",
+        "column": "Change (2026)",
+        "value": "21%"
+      },
+      {
+        "type": "sentence",
+        "quote": "iPhone net sales increased during 2026 compared to 2025 due to higher net sales of Pro models."
+      }
+    ]
+  },
+  {
+    "id": "AAPL-H04",
+    "company": "AAPL",
+    "split": "held_out",
+    "question": "What was Apple's diluted EPS in fiscal 2026?",
+    "reference_answer": "$8.98, up from $7.46.",
+    "reference_citations": [
+      {
+        "type": "cell",
+        "table_row": "Diluted (earnings per share)",
+        "column": "2026",
+        "value": "8.98"
+      },
+      {
+        "type": "cell",
+        "table_row": "Diluted (earnings per share)",
+        "column": "2025",
+        "value": "7.46"
+      }
+    ]
+  }
+]

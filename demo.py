@@ -2,178 +2,256 @@
 """
 Interactive Diligence Agent Terminal Demo.
 Allows users to:
-1. Select a company (MSFT, AAPL, NKE).
-2. Type ANY custom investor diligence question freely in plain text.
+1. Ask diligence questions about Microsoft (MSFT) or Apple (AAPL) on real SEC Form 10-Ks.
+2. View live LLM synthesis and verified sentence quotes / table cell citations.
 3. Inspect active Playbook rules.
-4. Submit custom analyst feedback in real time.
+4. Test the real-time Analyst Verification Gate against noisy or adversarial feedback.
 """
 
 import os
 import sys
 import json
-import re
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from src.signals.citation_verifier import CitationVerifier
-from src.memory.playbook import DiligencePlaybook
-from src.agent.diligence_agent import DiligenceAgent
-from src.evaluation.scorer import DiligenceScorer
+from src.parser.edgar_parser import EdgarFilingParser
+from src.agent.diligence_agent import DiligenceAgent, DiligencePlaybook, PlaybookRule
+from src.agent.local_llm import LocalLLMClient
+from src.feedback.analyst_gate import AnalystVerificationGate
 
-def infer_category(question_text: str) -> str:
-    """Infers the diligence category from user's free-text question."""
-    q_lower = question_text.lower()
-    if "customer" in q_lower or "concentration" in q_lower or "client" in q_lower:
-        return "Customer Concentration"
-    elif "margin" in q_lower or "depreciation" in q_lower or "useful life" in q_lower or "cost of revenue" in q_lower:
-        return "Gross Margin & Accounting"
-    elif "cloud" in q_lower or "azure" in q_lower or "segment" in q_lower or "mac" in q_lower or "direct" in q_lower:
-        return "Segment Performance"
-    elif "capex" in q_lower or "capital expenditure" in q_lower or "cash flow" in q_lower:
-        return "Capital Allocation & Capex"
-    elif "fx" in q_lower or "foreign exchange" in q_lower or "currency" in q_lower:
-        return "FX Impact"
-    elif "r&d" in q_lower or "research" in q_lower:
-        return "R&D Investment"
-    elif "debt" in q_lower or "cash" in q_lower or "liquidity" in q_lower:
-        return "Balance Sheet & Debt"
-    elif "headcount" in q_lower or "restructuring" in q_lower or "layoff" in q_lower or "employee" in q_lower:
-        return "Restructuring & Headcount"
-    return "General"
 
 def main():
     print("=" * 65)
     print("   STRATEGYCONNECT DILIGENCE AGENT - INTERACTIVE TERMINAL   ")
     print("=" * 65)
 
-    filings = {}
-    filings_dir = os.path.join(BASE_DIR, "data/filings")
-    for fname, comp in [("msft_10k_2023.txt", "MSFT"), ("aapl_10k_2023.txt", "AAPL"), ("nke_10k_2023.txt", "NKE")]:
-        with open(os.path.join(filings_dir, fname), "r") as f:
-            filings[comp] = f.read()
+    msft_path = os.path.join(BASE_DIR, "data/sc-diligence/filings/msft-20260630.htm")
+    aapl_path = os.path.join(BASE_DIR, "data/sc-diligence/filings/aapl-20260926.htm")
 
-    verifier = CitationVerifier(filings)
-    playbook = DiligencePlaybook(verifier, naive_mode=False)
-    agent = DiligenceAgent(filings, verifier, playbook=playbook)
+    print("\n[Ingesting Real SEC EDGAR Form 10-K Filings]...")
+    msft_parser = EdgarFilingParser(msft_path)
+    aapl_parser = EdgarFilingParser(aapl_path)
+    print(f"  • Microsoft Corporation: {len(msft_parser.sentences):,} sentences, {len(msft_parser.table_cells):,} table cells.")
+    print(f"  • Apple Inc.:            {len(aapl_parser.sentences):,} sentences, {len(aapl_parser.table_cells):,} table cells.")
 
-    print("\n[System Ready]: 3 Companies Loaded:")
-    print("  • Microsoft Corporation (MSFT)")
-    print("  • Apple Inc. (AAPL)")
-    print("  • NIKE, Inc. (NKE - Unseen Evaluation Company)")
-    print("Playbook is active with Real-Time Grounding Gate ON.\n")
+    # Initialize Local LLM Client
+    llm = LocalLLMClient()
+    print(f"\n[Local LLM Client]: Model={llm.model_name} (Status: {'Connected' if llm.is_connected else 'Offline / Deterministic Fallback'})")
+
+    playbook_msft = DiligencePlaybook()
+    playbook_aapl = DiligencePlaybook()
+    agent_msft = DiligenceAgent(msft_parser, playbook_msft, llm=llm)
+    agent_aapl = DiligenceAgent(aapl_parser, playbook_aapl, llm=llm)
+    gate = AnalystVerificationGate({"MSFT": msft_parser, "AAPL": aapl_parser})
+
+    # Preload option for 32 learned rules
+    fb_path = os.path.join(BASE_DIR, "data/sc-diligence/feedback.jsonl")
+    q_path = os.path.join(BASE_DIR, "data/sc-diligence/questions.json")
+    if os.path.exists(fb_path) and os.path.exists(q_path):
+        try:
+            preload = input("\nPreload the 32 verified rules learned from the 4-round feedback loop? (y/n) [default: y]: ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            preload = "y"
+        
+        if preload != "n":
+            with open(q_path) as f:
+                q_map = {q["id"]: q for q in json.load(f)}
+            with open(fb_path) as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    fb = json.loads(line)
+                    q_obj = q_map.get(fb.get("question_id"), {})
+                    res = gate.process_feedback_item(fb, q_obj)
+                    if res["is_valid"]:
+                        r = PlaybookRule(
+                            rule_id=f"RULE-{fb['id']}",
+                            topic=agent_msft.identify_topic(fb["correction"]),
+                            condition=f"Verified analyst correction ({fb['analyst']})",
+                            action=fb["correction"]
+                        )
+                        agent_msft.playbook.add_rule(r)
+                        agent_aapl.playbook.add_rule(r)
+            print(f"  • Successfully preloaded {len(agent_msft.playbook.rules)} verified diligence rules into Playbook memory!")
+
+    print("\nSystem ready. Enter an option below:")
 
     while True:
-        print("-" * 65)
+        print("\n" + "-" * 65)
         print("Choose an action:")
         print("  1. Ask a question about Microsoft (MSFT)")
         print("  2. Ask a question about Apple (AAPL)")
-        print("  3. Ask a question about Nike (NKE - UNSEEN Company)")
-        print("  4. View active Playbook Rules")
-        print("  5. Submit custom feedback / test the 20% Noise Filter")
-        print("  6. Exit")
-        choice = input("\nEnter choice (1-6): ").strip()
+        print("  3. View active Playbook Rules")
+        print("  4. Test Analyst Verification Gate (Noise / Injection Filter)")
+        print("  5. Exit")
+        try:
+            choice = input("\nEnter choice (1-5): ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nExiting.")
+            break
 
-        if choice == "6":
+        if choice == "5":
             print("\nExiting. Thank you!")
             break
 
-        elif choice in ["1", "2", "3"]:
-            comp_map = {"1": "MSFT", "2": "AAPL", "3": "NKE"}
-            comp = comp_map[choice]
-            
-            print(f"\nAsk ANY question about {comp} (or press Enter for suggested question):")
-            print("Examples:")
+        elif choice in ["1", "2"]:
+            comp = "MSFT" if choice == "1" else "AAPL"
+            agent = agent_msft if comp == "MSFT" else agent_aapl
+            parser = msft_parser if comp == "MSFT" else aapl_parser
+
+            print(f"\nAsk ANY diligence question about {comp} (or press Enter for suggested question):")
             if comp == "MSFT":
-                print("  • How concentrated is revenue among top customers?")
-                print("  • What was gross margin and how did server useful life impact it?")
-                print("  • What drove growth in the Intelligent Cloud segment?")
-            elif comp == "AAPL":
-                print("  • Why did Mac sales decline last year?")
-                print("  • Where is Apple's manufacturing concentrated?")
-                print("  • How much was returned to shareholders via buybacks and dividends?")
-            elif comp == "NKE":
-                print("  • Why did NIKE's gross margin contract 250 bps?")
-                print("  • How concentrated is wholesale revenue with Foot Locker?")
-                print("  • Where is footwear manufacturing geographically concentrated?")
+                print("  [Suggestion]: How fast did Microsoft's total revenue grow in fiscal 2026, and what drove it?")
+            else:
+                print("  [Suggestion]: What was Apple's total gross margin percentage in fiscal 2026?")
 
-            user_q = input("\nType your question: ").strip()
+            try:
+                user_q = input("\nType your question: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                break
+
             if not user_q:
-                # Default suggestion
-                user_q = "How concentrated is revenue among top customers?" if comp != "NKE" else "Why did gross margin contract last year?"
+                user_q = (
+                    "How fast did Microsoft's total revenue grow in fiscal 2026, and what drove it?"
+                    if comp == "MSFT"
+                    else "What was Apple's total gross margin percentage in fiscal 2026?"
+                )
 
-            cat = infer_category(user_q)
-            q_payload = {
-                "id": f"LIVE_{comp}_01",
+            q_obj = {
+                "id": f"INTERACTIVE_{comp}_01",
                 "company": comp,
-                "category": cat,
                 "question": user_q
             }
 
             print(f"\n[QUERYING DILIGENCE AGENT]...")
             print(f"Company:  {comp}")
-            print(f"Category: {cat}")
             print(f"Question: {user_q}")
 
-            res = agent.answer_question(q_payload)
+            res = agent.answer_question(q_obj)
             print(f"\n[AGENT ANSWER]:")
             print(f"> {res['answer']}")
 
-            # Citations check
-            cit_eval = verifier.verify_citations(res["answer"], expected_company=comp)
-            print(f"\n[AUDIT & GROUNDING CHECK]:")
-            print(f"  • Valid Citations:   {cit_eval['valid_citations']}")
-            if cit_eval["invalid_citations"]:
-                print(f"  • Invalid Citations: {cit_eval['invalid_citations']}")
+            print(f"\n[GROUNDED CITATIONS]:")
+            if not res["citations"]:
+                print("  (No direct citations found in filing)")
+            for i, cit in enumerate(res["citations"], 1):
+                if cit.get("type") == "sentence":
+                    print(f"  {i}. [Sentence Quote]: \"{cit.get('quote')}\"")
+                elif cit.get("type") == "cell":
+                    print(f"  {i}. [Table Cell]: Row='{cit.get('table_row')}', Col='{cit.get('column')}', Value='{cit.get('value')}'")
 
-            # Allow immediate analyst feedback
-            print("\n" + "." * 65)
-            give_fb = input("Would you like to provide an analyst correction on this answer? (y/n): ").strip().lower()
+            # Allow immediate feedback
+            try:
+                give_fb = input("\nWould you like to provide an analyst correction on this answer? (y/n): ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                give_fb = "n"
+
             if give_fb == "y":
-                correction = input("Type your correction: ").strip()
+                try:
+                    correction = input("Type your correction: ").strip()
+                except (EOFError, KeyboardInterrupt):
+                    correction = ""
                 if correction:
-                    fb_dict = {"correction": correction, "is_noisy": False}
-                    learn_res = playbook.learn_from_feedback(q_payload, res["answer"], fb_dict)
-                    if learn_res["status"] == "accepted":
-                        print(">>> ✅ RESULT: ACCEPTED & ADDED TO PLAYBOOK!")
-                        print(f"    New Rule: {learn_res['rule']['guideline']}")
+                    fb_item = {
+                        "id": "FB-USER",
+                        "round": 1,
+                        "analyst": "AN-USER",
+                        "question_id": q_obj["id"],
+                        "correction": correction,
+                        "citations": res["citations"]
+                    }
+                    decision = gate.process_feedback_item(fb_item, q_obj)
+                    if decision["is_valid"]:
+                        print(">>> ✅ RESULT: ACCEPTED BY GATE & ADDED TO PLAYBOOK!")
+                        rule = PlaybookRule(
+                            rule_id="RULE-USER",
+                            topic=agent.identify_topic(correction),
+                            condition="User verified correction",
+                            action=correction
+                        )
+                        agent.playbook.add_rule(rule)
                     else:
                         print(">>> 🛑 RESULT: REJECTED BY GATE!")
-                        print(f"    Reason: {learn_res['reason']}")
+                        print(f"    Reason: {decision['reason']}")
+
+        elif choice == "3":
+            print("\n[ACTIVE PLAYBOOK RULES]:")
+            all_rules = agent_msft.playbook.rules
+            if not all_rules:
+                print("  (Playbook is currently at Round 0 baseline. Rules are added as verified analyst corrections are accepted.)")
+            else:
+                print(f"  Total Active Rules: {len(all_rules)}")
+                for i, r in enumerate(all_rules, 1):
+                    print(f"  {i:2d}. [{r.topic}]: {r.action}")
 
         elif choice == "4":
-            print("\n[ACTIVE PLAYBOOK RULES]:")
-            if not playbook.rules:
-                print("  (Playbook is currently empty. Rules are learned when feedback is submitted.)")
+            print("\n[TEST THE ANALYST VERIFICATION GATE]")
+            print("Test ANY official analyst feedback item directly from data/sc-diligence/feedback.jsonl:")
+            print("  • FB-012 (AN-03): Valid institutional tax rate correction (19% vs 18%) -> Accepted")
+            print("  • FB-028 (AN-01): Adversarial prompt injection / system override attack -> Rejected")
+            print("  • FB-027 (AN-01): 1,000x magnitude error ($115.9 million vs $115,948M)  -> Rejected")
+            print("  • FB-008 (AN-01): Temporal error (FY2025 net sales claimed as FY2026)   -> Rejected")
+            print("  • FB-033 (AN-01): Hallucinated 'Harbor' multi-year agreement             -> Rejected")
+            print("  • FB-001 (AN-01): OpenAI >10% revenue contradicting Note 19 negative assurance -> Rejected")
+            print("  • FB-003 (AN-02): Inaccurate 'all payable' qualifier on purchase obligations  -> Rejected")
+            print("  • (Or type 'custom' to enter your own free-text correction)")
+
+            try:
+                target_id = input("\nEnter Feedback ID (FB-001 to FB-048) or 'custom' [default: FB-012]: ").strip().upper()
+            except (EOFError, KeyboardInterrupt):
+                target_id = "FB-012"
+
+            if not target_id:
+                target_id = "FB-012"
+
+            # Dynamic loading directly from official feedback dataset
+            fb_file = os.path.join(BASE_DIR, "data/sc-diligence/feedback.jsonl")
+            q_file = os.path.join(BASE_DIR, "data/sc-diligence/questions.json")
+            with open(q_file) as f_q:
+                q_lookup = {q["id"]: q for q in json.load(f_q)}
+            with open(fb_file) as f_fb:
+                fb_lookup = {fb["id"]: fb for line in f_fb if line.strip() for fb in [json.loads(line)]}
+
+            if target_id in fb_lookup:
+                fb = fb_lookup[target_id]
+                q_obj = q_lookup.get(fb.get("question_id"), {})
+                print(f"\n[Evaluating Official Item {fb['id']} (Analyst: {fb['analyst']}, Round {fb.get('round')})]:")
+                print(f"Correction text:   \"{fb['correction']}\"")
+                print(f"Attached Citations: {fb.get('citations')}")
+                decision = gate.process_feedback_item(fb, q_obj)
+                if decision["is_valid"]:
+                    print("\n>>> ✅ RESULT: ACCEPTED BY GATE & ADDED TO PLAYBOOK!")
+                    rule = PlaybookRule(
+                        rule_id=f"RULE-{fb['id']}",
+                        topic=agent_msft.identify_topic(fb["correction"]),
+                        condition=f"Verified analyst correction ({fb['analyst']})",
+                        action=fb["correction"]
+                    )
+                    agent_msft.playbook.add_rule(rule)
+                    agent_aapl.playbook.add_rule(rule)
+                else:
+                    print("\n>>> 🛑 RESULT: REJECTED BY GATE!")
+                    print(f"    Reason: {decision['reason']}")
             else:
-                for i, r in enumerate(playbook.rules, 1):
-                    cat_name = r.get("intent_category", r.get("category", "General"))
-                    print(f"  {i}. [{cat_name}]: {r['guideline']}")
-            print(f"\nTotal Feedback Processed: {playbook.accepted_feedback_count} accepted, {playbook.rejected_feedback_count} rejected.")
+                try:
+                    custom_text = input("\nEnter custom correction text: ").strip()
+                except (EOFError, KeyboardInterrupt):
+                    custom_text = ""
+                if custom_text:
+                    custom_fb = {
+                        "id": "FB-CUSTOM", "round": 1, "analyst": "AN-USER", "question_id": "MSFT-L08",
+                        "correction": custom_text,
+                        "citations": [{"type": "sentence", "quote": "Our effective tax rate for fiscal years 2026 and 2025 was 19% and 18%, respectively."}]
+                    }
+                    decision = gate.process_feedback_item(custom_fb, {"id": "MSFT-L08", "question": "What was the effective tax rate?", "company": "MSFT"})
+                    if decision["is_valid"]:
+                        print("\n>>> ✅ RESULT: ACCEPTED BY GATE & ADDED TO PLAYBOOK!")
+                    else:
+                        print("\n>>> 🛑 RESULT: REJECTED BY GATE!")
+                        print(f"    Reason: {decision['reason']}")
 
-        elif choice == "5":
-            print("\n[TEST THE REAL-TIME FEEDBACK GATE]")
-            print("Try typing a real correction OR a noisy/hallucinated correction to test the gate:")
-            print("  • Valid: 'No single customer accounted for >10%. [MSFT:S030]'")
-            print("  • Noisy/Fake tag: 'Azure grew 42% [MSFT:S999]'")
-            print("  • Noisy/Fake number: 'Amazon is top customer with 18% share [MSFT:S001]'")
-            
-            fb_text = input("\nEnter correction text: ").strip()
-            if not fb_text:
-                fb_text = "No single customer accounted for >10%. [MSFT:S030]"
-
-            test_q = {"id": "CUSTOM_01", "category": "Customer Concentration", "company": "MSFT"}
-            print(f"\nEvaluating feedback through Verification Gate...")
-            fb_dict = {"correction": fb_text, "is_noisy": False}
-            learn_res = playbook.learn_from_feedback(test_q, "", fb_dict)
-
-            if learn_res["status"] == "accepted":
-                print(">>> ✅ RESULT: ACCEPTED & DISTILLED INTO PLAYBOOK!")
-                print(f"    New Rule: {learn_res['rule']['guideline']}")
-            else:
-                print(">>> 🛑 RESULT: REJECTED BY GATE!")
-                print(f"    Reason: {learn_res['reason']}")
 
 if __name__ == "__main__":
     main()

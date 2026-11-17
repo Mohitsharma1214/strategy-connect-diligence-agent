@@ -1,0 +1,18 @@
+{
+  "id": "AAPL-H04",
+  "answer": "Diluted EPS was $8.98, up from $7.46.",
+  "citations": [
+    {
+      "type": "cell",
+      "table_row": "Diluted (earnings per share)",
+      "column": "2026",
+      "value": "8.98"
+    },
+    {
+      "type": "cell",
+      "table_row": "Diluted (earnings per share)",
+      "column": "2025",
+      "value": "7.46"
+    }
+  ]
+}
