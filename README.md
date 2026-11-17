@@ -56,13 +56,14 @@ Across 3 random seeds (`[42, 137, 2026]`) testing stochastic feedback order perm
 - **Local Open-Weights Execution**: `llama3.2:3b` via Ollama executes the 4-round pipeline in ~7.5 seconds at \$0.00 cost.
 
 ### Analyst Reliability & Forensic Audit
-The epistemic verification gate rejected **17 out of 48 corrupt items (35.4% noise rejection rate)** while quarantining 4 low-trust submissions for partner review (31 accepted = 27 cleared directly into playbooks + 4 quarantined):
+The epistemic verification gate rejected **17 out of 48 corrupt items (35.4% noise rejection rate)** while quarantining 4 low-trust submissions for partner review (27 cleared directly into active playbooks + 4 quarantined):
 
-| Analyst ID | Total Items | Accepted | Rejected | Empirical Reliability | Primary Failure Modes |
-| :---: | :---: | :---: | :---: | :---: | :--- |
-| **`AN-01`** | 16 | 4 | 12 | **25.0%** | Prompt injection (`FB-028`), temporal swaps, $1,000\times$ scale error (`FB-027`), low overlap |
-| **`AN-02`** | 16 | 15 | 1 | **93.8%** | Institutional grade; precision table citations. Only 1 rejection (`FB-003`: "all payable" vs $\$82.7\text{B}$) |
-| **`AN-03`** | 16 | 12 | 4 | **75.0%** | Subtle accounting errors (receivables vs revenue, non-GAAP conflation, citing Japan for China) |
+| Analyst ID | Total Items | Cleared (Active) | Quarantined (Review) | Rejected (Noise) | Empirical Reliability | Primary Failure Modes |
+| :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **`AN-01`** | 16 | 0 | 4 | 12 | **25.0%** | Prompt injection (`FB-028`), temporal swaps, $1,000\times$ scale error (`FB-027`), low overlap |
+| **`AN-02`** | 16 | 15 | 0 | 1 | **93.8%** | Institutional grade; precision table citations. Only 1 rejection (`FB-003`: "all payable" vs $\$82.7\text{B}$) |
+| **`AN-03`** | 16 | 12 | 0 | 4 | **75.0%** | Subtle accounting errors (receivables vs revenue, non-GAAP conflation, citing Japan for China) |
+| **Total** | **48** | **27** | **4** | **17** | **64.6%** | **35.4% Noise Rejected (17 rejected; 4 quarantined for partner review)** |
 
 ### Automated Judge Alignment (30 Hand-Scored Benchmark)
 Validated against [`data/hand_scored_30.json`](data/hand_scored_30.json):

@@ -33,14 +33,14 @@ Across 48 feedback submissions, **35.4% contain errors** (17 rejected; 4 quarant
 
 *Command to produce*: `./run.sh` (or inspect `results/metrics.json`)
 
-Tracking empirical reliability and Bayesian trust ($\text{Beta}(1, 1)$ prior) exposes three distinct analyst personas across 48 submissions (31 accepted = 27 cleared directly into playbooks + 4 quarantined for review):
+Tracking empirical reliability and Bayesian trust ($\text{Beta}(1, 1)$ prior) exposes three distinct analyst personas across 48 submissions (27 cleared into active playbooks + 4 quarantined for review):
 
-| Analyst ID | Submissions | Accepted | Rejected | Empirical Reliability | Primary Failure Modes Observed |
-| :--- | :---: | :---: | :---: | :---: | :--- |
-| **`AN-01`** | 16 | 4 | 12 | **25.0%** | Adversarial injection (`FB-028`), temporal swaps, $1,000\times$ magnitude error (`FB-027`), low overlap |
-| **`AN-02`** | 16 | 15 | 1 | **93.8%** | Institutional quality; precision table citations. Only 1 rejection (`FB-003`: "all payable" vs $\$82.7\text{B}$) |
-| **`AN-03`** | 16 | 12 | 4 | **75.0%** | Subtle accounting errors (receivables vs revenue, non-GAAP conflation, citing Japan for China) |
-| **Total** | **48** | **31** | **17** | **64.6%** | **35.4% Noise Rejected (17 rejected; 4 quarantined for human review)** |
+| Analyst ID | Submissions | Cleared (Active) | Quarantined (Review) | Rejected (Noise) | Empirical Reliability | Primary Failure Modes Observed |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| **`AN-01`** | 16 | 0 | 4 | 12 | **25.0%** | Adversarial injection (`FB-028`), temporal swaps, $1,000\times$ magnitude error (`FB-027`), low overlap |
+| **`AN-02`** | 16 | 15 | 0 | 1 | **93.8%** | Institutional quality; precision table citations. Only 1 rejection (`FB-003`: "all payable" vs $\$82.7\text{B}$) |
+| **`AN-03`** | 16 | 12 | 0 | 4 | **75.0%** | Subtle accounting errors (receivables vs revenue, non-GAAP conflation, citing Japan for China) |
+| **Total** | **48** | **27** | **4** | **17** | **64.6%** | **35.4% Noise Rejected (17 rejected; 4 quarantined for human review)** |
 
 *Forensic Categories of 17 Rejected Items*:
 - **Prompt Injection**: `FB-028` (adversarial override attempt).
