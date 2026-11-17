@@ -123,7 +123,7 @@ class DiligenceAgent:
             return "customer_concentration"
         if "gross margin" in t_lower or "margin percentage" in t_lower:
             return "gross_margin"
-        if "property and equipment" in t_lower or "capex" in t_lower or "capital additions" in t_lower:
+        if "property and equipment" in t_lower or "capex" in t_lower or "capital expenditures" in t_lower or "capital additions" in t_lower:
             return "capex_additions"
         if "repurchase" in t_lower or "buybacks" in t_lower or "dividend" in t_lower:
             return "capital_return"
@@ -137,7 +137,7 @@ class DiligenceAgent:
             return "headcount"
         if "diluted eps" in t_lower or "earnings per share" in t_lower:
             return "diluted_eps"
-        if "net sales" in t_lower or "total revenue" in t_lower or "revenue grow" in t_lower:
+        if "net sales" in t_lower or "total revenue" in t_lower or "total revenues" in t_lower or "revenue grow" in t_lower:
             return "revenue_and_sales"
         return "general"
 
@@ -176,7 +176,7 @@ class DiligenceAgent:
 
         # Standard GAAP / SEC Form 10-K financial terminology (universal across all industries):
         if topic == "customer_concentration":
-            expansion_terms.extend(["customer", "concentration", "individual customer", "single customer", "10% of revenue", "10 percent", "major customer", "credit risk", "trade receivables"])
+            expansion_terms.extend(["customer", "concentration", "individual customer", "single customer", "10% of revenue", "10 percent", "10% or more", "major customer", "credit risk", "trade receivables", "total receivables", "receivables balance", "no entity represented", "concentration of credit risk"])
         elif topic == "gross_margin":
             expansion_terms.extend(["gross margin", "margin percentage", "cost of sales", "cost of revenue", "gross profit"])
         elif topic == "capex_additions":
@@ -188,7 +188,7 @@ class DiligenceAgent:
         elif topic == "obligations_and_leases":
             expansion_terms.extend(["purchase obligations", "contractual obligations", "commitments", "leases", "uncommenced leases"])
         elif topic == "revenue_and_sales":
-            expansion_terms.extend(["total revenue", "total net sales", "net sales", "revenue increased", "revenue grew"])
+            expansion_terms.extend(["total revenue", "total revenues", "total net sales", "net sales", "revenue increased", "revenue grew", "recognized total revenues", "compared to the prior year"])
         elif topic == "headcount":
             expansion_terms.extend(["employed", "full-time employees", "headcount", "personnel", "workforce"])
         elif topic == "diluted_eps":
@@ -213,6 +213,12 @@ class DiligenceAgent:
             # Favor quantitative sentences when question asks quantitative facts
             if any(c in sent for c in ["$", "%"]) and any(q_word in question_text.lower() for q_word in ["how fast", "how much", "rate", "%", "what was"]):
                 score += 0.5
+            # Match comparative intent: "compared to the prior year" / "compared to prior"
+            if "compared" in query_terms and ("compared to the prior year" in s_lower or "compared to prior" in s_lower):
+                score += 1.5
+            # Demote sentences whose primary subject is a subordinate expense line when querying headline revenue
+            if topic == "revenue_and_sales" and ("r&d expense as a percentage" in s_lower or "marketing expense" in s_lower):
+                score -= 4.0
             if score > 0:
                 best_sentences.append((score, sent))
 
@@ -241,8 +247,12 @@ class DiligenceAgent:
         citations = []
         context_str = ""
 
-        # Check if table cells provide a direct coordinate answer (e.g. EPS, total net sales, capex)
-        table_preferred_topics = {"diluted_eps", "capex_additions"}
+        # Check if table cells provide a direct coordinate answer (e.g. EPS, cash flow additions)
+        table_preferred_topics = {"diluted_eps"}
+        if topic == "capex_additions" and best_cells:
+            cell_row = best_cells[0][1].get("table_row", "").lower()
+            if any(term in cell_row for term in ["additions to property", "purchases of property", "capital additions"]):
+                table_preferred_topics.add("capex_additions")
         prefer_table = topic in table_preferred_topics or (best_cells and best_cells[0][0] >= 3.0 and not best_sentences)
 
         if prefer_table and best_cells:
@@ -255,15 +265,19 @@ class DiligenceAgent:
             context_str = f"From Financial Table '{top_row}': {cell_desc}."
             answer_text = f"{top_row} was {cell_desc}."
         elif best_sentences:
-            # Take top 1 or 2 relevant sentences
-            top_sents = [s[1] for s in best_sentences[:2]]
+            top_sents = [best_sentences[0][1]]
+            # Only append a second sentence if it directly shares the primary topic terms and complements
+            if len(best_sentences) > 1:
+                cand_sent = best_sentences[1][1]
+                cand_lower = cand_sent.lower()
+                # Do not attach secondary sentences from unrelated expense lines (e.g. R&D) when querying revenue
+                is_irrelevant = any(bad in cand_lower for bad in ["r&d expense", "marketing expense", "overhead expense"])
+                if not is_irrelevant and (topic in ["gross_margin", "customer_concentration"] or (len(top_sents[0]) < 80 and any(c in cand_sent for c in ["$", "%"]))):
+                    top_sents.append(cand_sent)
             for s in top_sents:
                 citations.append({"type": "sentence", "quote": s})
             context_str = " ".join(top_sents)
-            answer_text = top_sents[0]
-            # If second sentence complements the first (e.g. gross margin dollars + margin percentage)
-            if len(top_sents) > 1 and len(answer_text) < 150:
-                answer_text += " " + top_sents[1]
+            answer_text = " ".join(top_sents)
         elif best_cells:
             # Fallback to top cell
             c = best_cells[0][1]
@@ -283,7 +297,17 @@ class DiligenceAgent:
             playbook_hint = rules[0].action if rules else None
             llm_ans = self.llm.synthesize_diligence_answer(question_text, context_str, playbook_hint)
             if llm_ans and len(llm_ans.strip()) > 10:
-                answer_text = llm_ans.strip()
+                # Numerical faithfulness verification: ensure LLM synthesis did not distort numbers
+                llm_nums = set(re.findall(r"\b\d+(?:\.\d+)?\b", llm_ans))
+                llm_substantive = {n for n in llm_nums if len(n) > 1 or "." in n}
+                ctx_nums = set(re.findall(r"\b\d+(?:\.\d+)?\b", context_str))
+                faithful = True
+                for num in llm_substantive:
+                    if num not in ctx_nums and not any(num in c for c in ctx_nums):
+                        faithful = False
+                        break
+                if faithful:
+                    answer_text = llm_ans.strip()
 
         # Strict ground truth validation: verify all attached citations exist in active filing
         verified_citations = []

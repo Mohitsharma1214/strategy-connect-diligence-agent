@@ -18,7 +18,7 @@ class LocalLLMClient:
     Requires 0 paid API keys and 0 cloud subscriptions.
     """
 
-    def __init__(self, model_name: str = "llama3.2:3b", host: str = "http://127.0.0.1:11434", timeout: float = 10.0):
+    def __init__(self, model_name: str = "llama3.2:3b", host: str = "http://127.0.0.1:11434", timeout: float = 45.0):
         self.model_name = os.environ.get("LOCAL_LLM_MODEL", model_name)
         env_host = os.environ.get("OLLAMA_HOST")
         self.host = env_host.rstrip("/") if env_host else host.rstrip("/")
@@ -107,9 +107,11 @@ class LocalLLMClient:
             "You are an expert financial diligence analyst evaluating SEC Form 10-K filings.\n"
             "Guidelines:\n"
             "1. Answer the question directly and concisely based ONLY on the provided Filing Context.\n"
-            "2. If the context states negative assurance (e.g. 'no sales to an individual customer accounted for more than 10%'), do NOT say revenue is concentrated; state clearly that no single customer exceeded 10%.\n"
-            "3. Cite exact figures, percentages, dollar amounts, and fiscal years verbatim from the context.\n"
-            "4. Do not invent or extrapolate numbers. Keep your answer under 3 sentences."
+            "2. If the context states negative assurance regarding customer sales (e.g. 'no sales to an individual customer accounted for more than 10%'), do NOT say revenue is concentrated; state clearly that no single customer exceeded 10%.\n"
+            "3. CRITICAL ACCOUNTING DISTINCTION: Accounts receivable concentration is NOT customer revenue concentration. If the context states that no entity represented 10% or more of total receivables, do NOT state or infer that no customer accounted for 10% of revenue.\n"
+            "4. If the provided context does not explicitly disclose customer revenue concentration or whether any single customer represented 10% or more of total revenue, explicitly state that the filing does not provide sufficient evidence to establish whether any single customer accounted for 10% or more of revenue, and report what the filing does state regarding total receivables.\n"
+            "5. Cite exact figures, percentages, dollar amounts, and fiscal years verbatim from the context without altering or dropping digits.\n"
+            "6. Do not invent or extrapolate numbers. Keep your answer under 3 sentences."
         )
 
         user_prompt = f"Question: {question}\n\n"

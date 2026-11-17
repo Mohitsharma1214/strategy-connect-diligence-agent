@@ -1,0 +1,18 @@
+[
+  {
+    "id": "TSLA-Q01",
+    "company": "TSLA",
+    "question": "What was Tesla's total revenues in fiscal year 2025, and how did it change compared to fiscal 2024?"
+  },
+  {
+    "id": "TSLA-Q02",
+    "company": "TSLA",
+    "question": "What was Tesla's capital expenditures or additions to property, plant and equipment in 2025?"
+  },
+  {
+    "id": "TSLA-Q03",
+    "company": "TSLA",
+    "question": "How concentrated is Tesla's revenue among individual customers, and did any single customer account for 10% or more of total revenue?"
+  }
+]
+
