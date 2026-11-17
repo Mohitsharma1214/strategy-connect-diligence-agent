@@ -42,18 +42,18 @@ All experiments run on **StrategyConnect’s official production dataset** (`sc-
 
 | Stage | Feedback Ingested | Accepted / Rejected | Learn Accuracy | Held-Out Accuracy | Citation Grounding |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Round 0 (Baseline)** | 0 | 0 / 0 | 12.5% | 0.0% | **100.0%** |
-| **Round 1** | 12 (FB-001..012) | 8 / 4 | **43.8%** | 0.0% | **100.0%** |
+| **Round 0 (Baseline)** | 0 | 0 / 0 | 18.8% | 12.5% | **100.0%** |
+| **Round 1** | 12 (FB-001..012) | 8 / 4 | **50.0%** | 0.0% | **100.0%** |
 | **Round 2** | 12 (FB-013..024) | 7 / 5 | **75.0%** | 0.0% | **100.0%** |
 | **Round 3** | 12 (FB-025..036) | 5 (2 rev) / 5 | **93.8%** | 0.0% | **100.0%** |
 | **Round 4** | 12 (FB-037..048) | 7 (2 rev) / 3 | **93.8%** | 0.0% | **100.0%** |
 
 ### Multi-Seed Sensitivity Profile
 Across 3 random seeds (`[42, 137, 2026]`) testing stochastic feedback order permutations:
-- **Learn Accuracy Growth**: Measurably improves from **12.5% $\to$ 93.8%** as verified corrections and retrieval strategies are assimilated.
+- **Learn Accuracy Growth**: Measurably improves from **18.8% $\to$ 93.8%** as verified corrections and retrieval strategies are assimilated.
 - **Held-Out Citation Grounding**: **100.0% $\pm$ 0.0%** (invariant across all seeds and rounds).
-- **Held-Out Strict Factual Accuracy**: **0.0% $\pm$ 0.0%** (the evaluation design keeps held-out questions and reference answers isolated from feedback processing; observed results are consistent with that separation, while demonstrating that localized feedback rules do not yet achieve generalized retrieval transfer to unseen line items).
-- **Local Open-Weights Execution**: `llama3.2:3b` via Ollama executes the 4-round pipeline in ~7.5 seconds at \$0.00 cost.
+- **Held-Out Strict Factual Accuracy**: Round 0 = **12.5% $\pm$ 0.0%** $\to$ Rounds 1–4 = **0.0% $\pm$ 0.0%** (the evaluation design keeps held-out questions and reference answers isolated from feedback processing; observed results are consistent with that separation, while demonstrating that localized feedback rules do not yet achieve generalized retrieval transfer to unseen line items).
+- **Local Open-Weights Execution**: `llama3.2:3b` via Ollama executes the 4-round pipeline at \$0.00 cost.
 
 ### Analyst Reliability & Forensic Audit
 The epistemic verification gate rejected **17 out of 48 corrupt items (35.4% noise rejection rate)** while quarantining 4 low-trust submissions for partner review (27 cleared directly into active playbooks + 4 quarantined):
