@@ -26,7 +26,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 
 ### Finding 1: No model answers any question. run.sh never creates the LLM client. Each answer is the filing sentence with the most words in common with the question, plus at most one more. The live path would also crash, because last_call_cost is never defined.
 - **Status**: **Fixed**
-- **Commit**: `1de0f6f`
+- **Commit**: `6057cc9`
 - **Verification Command**:
   ```bash
   ./run.sh --filing data/sc-diligence/filings/msft-20260630.htm --questions data/sc-diligence/questions.json --out answers_msft.jsonl && head -n 1 answers_msft.jsonl
@@ -52,14 +52,14 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 
 ### Finding 2: Synthetic 35-Sentence Filings Instead of Real SEC 10-K Documents
 - **Status**: **Fixed**
-- **Commit**: `1de0f6f`
+- **Commit**: `6057cc9`
 - **Verification Command**:
   ```bash
   python3 -c "from src.parser.edgar_parser import EdgarFilingParser; p = EdgarFilingParser('data/sc-diligence/filings/msft-20260630.htm'); print(f'Sentences: {len(p.sentences):,}, Table Cells: {len(p.table_cells):,}')"
   ```
 - **Expected Output**:
   ```text
-  Sentences: 1,481, Table Cells: 2,609
+  Sentences: 2,805, Table Cells: 2,609
   ```
 - **What the Audit Found**: Filings were synthetic 35-sentence text snippets rather than authentic SEC EDGAR Form 10-K filings with real financial statements and tables.
 - **Root Cause in Original Submission**: Over-simplified toy fixtures were generated to make parsing trivial, bypassing the challenge of messy Inline XBRL HTML, fragmented table structures, and multi-megabyte filings.
@@ -77,7 +77,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 
 ### Finding 3: Calibration Data Synthesized by Script Rather than Human Expert Judgment
 - **Status**: **Fixed**
-- **Commit**: `1de0f6f`
+- **Commit**: `6057cc9`
 - **Verification Command**:
   ```bash
   python3 -m src.eval.scorer
@@ -114,7 +114,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 
 ### Finding 4: Gaming / Loophole Demonstration Hardcoded
 - **Status**: **Fixed**
-- **Commit**: `1de0f6f`
+- **Commit**: `6057cc9`
 - **Verification Command**:
   ```bash
   ./run.sh && ls -lh results/plots/
@@ -140,7 +140,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 
 ### Finding 5: Noise Filter Trivial by Construction (Random String Perturbations)
 - **Status**: **Fixed**
-- **Commit**: `1de0f6f`
+- **Commit**: `6057cc9`
 - **Verification Command**:
   ```bash
   python3 -c "import json; m=json.load(open('results/metrics.json')); print(m['analyst_reliability'])"
@@ -166,7 +166,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 
 ### Finding 6: Held-Out Set Leakage & Absence of Generalization Testing
 - **Status**: **Fixed**
-- **Commit**: `1de0f6f`
+- **Commit**: `6057cc9`
 - **Verification Command**:
   ```bash
   python3 -c "import json; m=json.load(open('results/metrics.json')); print('Round 0 Held-Out:', m['baseline_round_0']['held_out']['citation_grounding']); print('Round 4 Held-Out:', m['rounds']['round_4']['held_out_metrics']['citation_grounding'])"
@@ -198,7 +198,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 
 ### Finding 7: Grounding Gate Fragility (Rejected Valid Filings / Numbers like "2023")
 - **Status**: **Fixed**
-- **Commit**: `1de0f6f`
+- **Commit**: `6057cc9`
 - **Verification Command**:
   ```bash
   python3 -c "from src.eval.scorer import extract_numbers_and_units; print(extract_numbers_and_units('In fiscal 2026 no customer had > 10%'))"
@@ -221,7 +221,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 
 ### Finding 8: The claims don't match the code. "Zero hardcoded templates" sits above a hardcoded keyword taxonomy that includes Nike-only words (markdowns, freight, indonesia). The Nike result appears as both 0.894 and 0.881. The held-out gain of 0.011 is about one standard deviation.
 - **Status**: **Fixed**
-- **Commit**: `1de0f6f`
+- **Commit**: `6057cc9`
 - **Verification Command**:
   ```bash
   grep -rnE "markdowns|freight|indonesia|cellular network" src/
