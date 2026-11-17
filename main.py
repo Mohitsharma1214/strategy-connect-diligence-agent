@@ -378,13 +378,13 @@ def generate_publication_plots(metrics: Dict[str, Any]) -> None:
             grounding_acc.append(m["held_out_metrics"]["citation_grounding"] * 100)
 
         plt.figure(figsize=(8, 5))
-        plt.plot(rounds, learn_acc, marker="o", linewidth=2.5, color="#1a73e8", label="Learn Split Accuracy (12.5% → 37.5%)")
+        plt.plot(rounds, learn_acc, marker="o", linewidth=2.5, color="#1a73e8", label=f"Learn Split Accuracy ({learn_acc[0]:.1f}% → {learn_acc[-1]:.1f}%)")
         plt.plot(rounds, held_out_acc, marker="^", linewidth=2.0, linestyle="-.", color="#f2994a", label="Held-Out Split (Mean across seeds)")
         if "multi_seed_evaluation" in metrics:
             summary = metrics["multi_seed_evaluation"]["summary"]
             held_stds = [summary[f"round_{r}"]["held_out_accuracy_std"] for r in rounds]
             plt.fill_between(rounds, [h - s for h, s in zip(held_out_acc, held_stds)], [h + s for h, s in zip(held_out_acc, held_stds)], color="#f2994a", alpha=0.2, label="Held-Out Spread (±1 std)")
-        plt.plot(rounds, grounding_acc, marker="s", linewidth=2, linestyle="--", color="#34a853", label="Citation Grounding (100%)")
+        plt.plot(rounds, grounding_acc, marker="s", linewidth=2, linestyle="--", color="#34a853", label=f"Citation Grounding ({grounding_acc[-1]:.1f}%)")
         plt.title("Learning Dynamics & Generalization Across Feedback Rounds (Multi-Seed)", fontsize=12, fontweight="bold")
         plt.xlabel("Feedback Round", fontsize=11)
         plt.ylabel("Accuracy (%)", fontsize=11)
