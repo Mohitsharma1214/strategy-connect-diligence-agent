@@ -165,7 +165,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 ---
 
 ### Finding 6: Held-Out Set Leakage & Absence of Generalization Testing
-- **Status**: **Fixed**
+- **Status**: **Split Isolation Fixed; Generalization Performance Unresolved**
 - **Commit**: `6057cc9`
 - **Verification Command**:
   ```bash
@@ -189,7 +189,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
     - `AAPL-H02`: Effective Tax Rate (17.0% vs 15.6%)
     - `AAPL-H03`: iPhone Net Sales Performance (+21% to $254,098M on Pro models)
     - `AAPL-H04`: Diluted EPS ($8.98 vs $7.46)
-  - Evaluated held-out performance at Round 0 (Baseline) and sequentially after every feedback round: zero regression observed, maintaining 100% grounding.
+  - Held-out citation grounding remained at 100% throughout evaluation. However, strict factual accuracy declined from 12.5% at baseline to 0.0% after Round 1 and remained at 0.0% through Round 4. The held-out split remained isolated from feedback processing, but the current feedback strategy did not generalize to unseen financial line items.
 - **Where to Verify**:
   - [`main.py`](main.py#L180-L215)
   - [`data/sc-diligence/questions.json`](data/sc-diligence/questions.json)
