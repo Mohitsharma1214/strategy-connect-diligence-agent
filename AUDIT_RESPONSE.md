@@ -14,7 +14,7 @@ I sincerely appreciate StrategyConnect's thorough, professional, and candid audi
 In response, I have completely overhauled the codebase from first principles. The system now runs on **StrategyConnect’s real production dataset**:
 1. **Real SEC Form 10-K Filings**: Microsoft FY2026 (8.58 MB HTML, 2,805 sentences, 2,609 table cells) and Apple FY2026 (1.65 MB HTML, 1,926 sentences, 1,587 table cells).
 2. **Official Question Benchmark**: 24 official questions (16 learn, 8 held-out).
-3. **Real Institutional Feedback**: 48 human analyst corrections across 4 rounds from three distinct profiles (`AN-01`, `AN-02`, `AN-03`).
+3. **Real Institutional Feedback**: 48 analyst corrections across 4 rounds from three distinct profiles (`AN-01`, `AN-02`, `AN-03`): 27 cleared into active playbooks, 4 quarantined for partner review, and 17 rejected as corrupt noise (35.4%).
 4. **Verifiable Citations**: Exact verbatim sentence quotes and exact table cell tuples (`table_row`, `column`, `value`).
 5. **Zero Paid Dependencies**: Fully self-contained local execution with zero paid API keys or cloud LLM subscriptions; runs via local open-weights Ollama runtime.
 
@@ -39,7 +39,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 - **Root Cause in Original Submission**: The inference client was disabled during batch testing to avoid rate limits, and the fallback path was never reconnected to the client instance, leaving dead code and an uninitialized attribute `last_call_cost`.
 - **Engineering Fix Implemented**:
   - Implemented `LocalLLMClient` in [`src/agent/local_llm.py`](src/agent/local_llm.py) supporting open-weights local execution (`llama3.2:3b` / `qwen2.5:0.5b` via Ollama) with zero external network or paid API dependencies.
-  - Explicitly defined and tracked `last_call_cost` and `total_cost` on both the client and `DiligenceAgent` instances; because inference executes entirely locally on CPU/GPU via Ollama, monetary cost is strictly `$0.00` per call (`last_call_cost = 0.0`), satisfying Part 2 Requirement 4 while eliminating the uninitialized attribute crash.
+  - Explicitly defined and tracked `last_call_cost` and `total_cost` on both the client and `DiligenceAgent` instances; because inference executes entirely locally on CPU via Ollama, monetary cost is strictly `$0.00` per call (`last_call_cost = 0.0`), satisfying Part 2 Requirement 4 while eliminating the uninitialized attribute crash. Full pipeline execution completed in measured `29:56.85` wall-clock time across ~215 model inferences on standard CPU at \$0.00 cost.
   - `run.sh` launches the local inference daemon, and `main.py` explicitly instantiates `LocalLLMClient(model_name="llama3.2:3b")` and connects to the active local runner endpoint (`http://127.0.0.1:11435`).
   - Answers are synthesized dynamically from retrieved filing context sentences and structured table cells with verified citations; zero static templates or hardcoded question branches exist.
 - **Where to Verify**:
@@ -149,15 +149,21 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
   ```text
   {'AN-01': {'total': 16, 'accepted': 4, 'rejected': 12, 'empirical_reliability': 0.25, 'bayesian_trust': 0.2778}, 'AN-02': {'total': 16, 'accepted': 15, 'rejected': 1, 'empirical_reliability': 0.9375, 'bayesian_trust': 0.8889}, 'AN-03': {'total': 16, 'accepted': 12, 'rejected': 4, 'empirical_reliability': 0.75, 'bayesian_trust': 0.7222}}
   ```
+  *(Note on Terminology: In the raw programmatic `analyst_reliability` dictionary, `"accepted"` tracks validity verification. However, under operational Bayesian trust enforcement, all 4 valid submissions from `AN-01` are flagged `needs_review` and quarantined for partner review, resulting in 0 cleared into active playbooks, 4 quarantined, and 12 rejected. Across all 48 submissions, 27 are cleared into active playbooks, 4 are quarantined, and 17 are rejected as noise.)*
 - **What the Audit Found**: The 20% noise filter was tested against artificial random string perturbations rather than realistic accounting/analyst errors.
 - **Root Cause in Original Submission**: Synthetic noise was injected via randomized word swaps, which failed to reflect institutional diligence failure modes.
 - **Engineering Fix Implemented**:
   - Tested against the full 48-item institutional analyst feedback dataset (`data/sc-diligence/feedback.jsonl`).
   - Evaluated three realistic analyst personas across 4 rounds:
-    - **`AN-01` (Adversarial/Careless)**: 25.0% reliability (4 accepted/quarantined, 12 rejected). Injected temporal errors, magnitude errors ($115.9M vs $115,948M), metric conflations, and an explicit prompt injection attack (`FB-028`).
-    - **`AN-02` (Institutional Grade)**: 93.8% reliability (15/16 accepted, 1 rejected). Precision disclosures, rejected only on `FB-003` for asserting "all payable" when $82.7B was payable.
-    - **`AN-03` (Subtle Accounting Mistakes)**: 75.0% reliability (12/16 accepted, 4 rejected). Intercepted on receivables conflation, Non-GAAP conflation, and mismatched citations.
-  - Overall Noise Interception Rate: **35.4% (17 corrupt items rejected out of 48; 4 quarantined for human review)**.
+
+| Analyst ID | Total Items | Cleared (Active) | Quarantined (Review) | Rejected (Noise) | Empirical Reliability | Primary Failure Modes |
+| :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **`AN-01`** | 16 | 0 | 4 | 12 | **25.0%** | Prompt injection (`FB-028`), temporal swaps, $1,000\times$ scale error (`FB-027`), low overlap |
+| **`AN-02`** | 16 | 15 | 0 | 1 | **93.8%** | Institutional grade; precision table citations. Only 1 rejection (`FB-003`: "all payable" vs $\$82.7\text{B}$) |
+| **`AN-03`** | 16 | 12 | 0 | 4 | **75.0%** | Subtle accounting errors (receivables vs revenue, non-GAAP conflation, citing Japan for China) |
+| **Total** | **48** | **27** | **4** | **17** | **64.6%** | **35.4% Noise Rejected (17 rejected; 4 quarantined for partner review)** |
+
+  - Overall Noise Interception Rate: **35.4% (17 corrupt items rejected out of 48; 4 quarantined for human review)**. None of the 4 quarantined submissions were ever added to active playbooks.
 - **Where to Verify**:
   - [`src/feedback/analyst_gate.py`](src/feedback/analyst_gate.py#L45-L185)
   - [`results/metrics.json`](results/metrics.json) (under `"analyst_reliability"` and `"rejected_feedback_details"`)

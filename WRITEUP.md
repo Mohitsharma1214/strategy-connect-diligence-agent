@@ -64,7 +64,7 @@ I evaluated the agent across 16 learn questions and 8 held-out questions (`MSFT-
 | **Round 3** | 12 (FB-025..036) | 5 (2 rev) / 5 | **93.8%** | 0.0% | **100.0%** |
 | **Round 4** | 12 (FB-037..048) | 7 (2 rev) / 3 | **93.8%** | 0.0% | **100.0%** |
 
-*Multi-Seed Execution Profile*: Across 3 random seeds (42, 137, 2026), learn accuracy climbed from 18.8% to 93.8%, while citation grounding remained at 100.0% ($\pm 0.0\%$). The evaluation design keeps held-out questions and reference answers isolated from feedback processing; observed results (Round 0 = 12.5% $\to$ Round 4 = 0.0% $\pm 0.0\%$) are consistent with that separation, while honestly demonstrating that localized feedback rules do not yet achieve generalized retrieval transfer to unseen financial line items. Local open-weights execution (`llama3.2:3b` via Ollama) completed the full ~215-question multi-seed pipeline in ~11m 40s on standard CPU at \$0.00 cost.
+*Multi-Seed Execution Profile*: Across 3 random seeds (42, 137, 2026), learn accuracy climbed from 18.8% to 93.8%, while citation grounding remained at 100.0% ($\pm 0.0\%$). The evaluation design keeps held-out questions and reference answers isolated from feedback processing; observed results (Round 0 = 12.5% $\to$ Round 4 = 0.0% $\pm 0.0\%$) are consistent with that separation, while honestly demonstrating that localized feedback rules do not yet achieve generalized retrieval transfer to unseen financial line items. Local open-weights execution (`llama3.2:3b` via Ollama) completed the full ~215-question multi-seed pipeline in 29m 57s (measured `29:56.85` wall-clock time) on standard CPU at \$0.00 cost.
 
 ---
 

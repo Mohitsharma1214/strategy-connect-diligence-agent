@@ -53,7 +53,7 @@ Across 3 random seeds (`[42, 137, 2026]`) testing stochastic feedback order perm
 - **Learn Accuracy Growth**: Measurably improves from **18.8% $\to$ 93.8%** as verified corrections and retrieval strategies are assimilated.
 - **Held-Out Citation Grounding**: **100.0% $\pm$ 0.0%** (invariant across all seeds and rounds).
 - **Held-Out Strict Factual Accuracy**: Round 0 = **12.5% $\pm$ 0.0%** $\to$ Rounds 1–4 = **0.0% $\pm$ 0.0%** (the evaluation design keeps held-out questions and reference answers isolated from feedback processing; observed results are consistent with that separation, while demonstrating that localized feedback rules do not yet achieve generalized retrieval transfer to unseen line items).
-- **Local Open-Weights Execution**: `llama3.2:3b` via Ollama executes the 4-round pipeline at \$0.00 cost.
+- **Local Open-Weights Execution**: Measured wall-clock time: **29m 57s** (`29:56.85` via `/usr/bin/time ./run.sh`, exit code 0) running local open-weights `llama3.2:3b` on CPU across ~215 question inferences at \$0.00 cost.
 
 ### Analyst Reliability & Forensic Audit
 The epistemic verification gate rejected **17 out of 48 corrupt items (35.4% noise rejection rate)** while quarantining 4 low-trust submissions for partner review (27 cleared directly into active playbooks + 4 quarantined):
