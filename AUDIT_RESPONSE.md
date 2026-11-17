@@ -38,15 +38,15 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 - **What the Audit Found**: The Round 1 submission never initialized the LLM client in `run.sh`, relied strictly on an extractive sentence-matching fallback, and the live path crashed because `last_call_cost` was missing from the agent class.
 - **Root Cause in Original Submission**: The inference client was disabled during batch testing to avoid rate limits, and the fallback path was never reconnected to the client instance, leaving dead code and an uninitialized attribute `last_call_cost`.
 - **Engineering Fix Implemented**:
-  - Implemented `LocalLLMClient` in [`src/agent/local_llm.py`](file:///home/mohitsharma/Documents/strategy-connect/src/agent/local_llm.py) supporting open-weights local execution (`qwen2.5:0.5b` / `llama3.2:3b` via Ollama) with zero external network or paid API dependencies.
+  - Implemented `LocalLLMClient` in [`src/agent/local_llm.py`](src/agent/local_llm.py) supporting open-weights local execution (`qwen2.5:0.5b` / `llama3.2:3b` via Ollama) with zero external network or paid API dependencies.
   - Explicitly defined and tracked `last_call_cost` and `total_cost` on both the client and `DiligenceAgent` instances; because inference executes entirely locally on CPU/GPU via Ollama, monetary cost is strictly `$0.00` per call (`last_call_cost = 0.0`), satisfying Part 2 Requirement 4 while eliminating the uninitialized attribute crash.
   - `run.sh` launches the local inference daemon, and `main.py` explicitly instantiates `LocalLLMClient(model_name="qwen2.5:0.5b")` and connects to the active local runner endpoint (`http://127.0.0.1:11435`).
   - Answers are synthesized dynamically from retrieved filing context sentences and structured table cells with verified citations; zero static templates or hardcoded question branches exist.
 - **Where to Verify**:
-  - [`src/agent/local_llm.py`](file:///home/mohitsharma/Documents/strategy-connect/src/agent/local_llm.py#L1-L105)
-  - [`src/agent/diligence_agent.py`](file:///home/mohitsharma/Documents/strategy-connect/src/agent/diligence_agent.py#L80-L100)
-  - [`main.py`](file:///home/mohitsharma/Documents/strategy-connect/main.py#L70-L88)
-  - [`run.sh`](file:///home/mohitsharma/Documents/strategy-connect/run.sh#L15-L25)
+  - [`src/agent/local_llm.py`](src/agent/local_llm.py#L1-L105)
+  - [`src/agent/diligence_agent.py`](src/agent/diligence_agent.py#L80-L100)
+  - [`main.py`](main.py#L70-L88)
+  - [`run.sh`](run.sh#L15-L25)
 
 ---
 
@@ -65,13 +65,13 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 - **Root Cause in Original Submission**: Over-simplified toy fixtures were generated to make parsing trivial, bypassing the challenge of messy Inline XBRL HTML, fragmented table structures, and multi-megabyte filings.
 - **Engineering Fix Implemented**:
   - Integrated StrategyConnect’s full production filings: `msft-20260630.htm` (8.58 MB) and `aapl-20260926.htm` (1.65 MB).
-  - Built an SEC EDGAR HTML and financial table parser (`EdgarFilingParser` in [`src/parser/edgar_parser.py`](file:///home/mohitsharma/Documents/strategy-connect/src/parser/edgar_parser.py#L1-L280)).
+  - Built an SEC EDGAR HTML and financial table parser (`EdgarFilingParser` in [`src/parser/edgar_parser.py`](src/parser/edgar_parser.py#L1-L280)).
   - Handles EDGAR Inline XBRL quirks: split table cells (e.g. `['(115,948', ')']`), trailing currency whitespace (`$ 329.1`), and stacked multi-year financial statements.
   - Extraction precision verified on official StrategyConnect test citations: **100.0% sentence extraction (23/23)** and **100.0% table cell extraction (26/26)**.
 - **Where to Verify**:
-  - [`src/parser/edgar_parser.py`](file:///home/mohitsharma/Documents/strategy-connect/src/parser/edgar_parser.py#L1-L280)
-  - [`data/sc-diligence/filings/msft-20260630.htm`](file:///home/mohitsharma/Documents/strategy-connect/data/sc-diligence/filings/msft-20260630.htm)
-  - [`data/sc-diligence/filings/aapl-20260926.htm`](file:///home/mohitsharma/Documents/strategy-connect/data/sc-diligence/filings/aapl-20260926.htm)
+  - [`src/parser/edgar_parser.py`](src/parser/edgar_parser.py#L1-L280)
+  - [`data/sc-diligence/filings/msft-20260630.htm`](data/sc-diligence/filings/msft-20260630.htm)
+  - [`data/sc-diligence/filings/aapl-20260926.htm`](data/sc-diligence/filings/aapl-20260926.htm)
 
 ---
 
@@ -97,7 +97,7 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 - **What the Audit Found**: Calibration claimed 30 human expert judgments, but the underlying data was generated programmatically by an internal mock script.
 - **Root Cause in Original Submission**: A programmatic generator script created artificial samples to test pipeline flow, but this was mistakenly described as human calibration data.
 - **Engineering Fix Implemented**:
-  - Authored [`data/hand_scored_30.json`](file:///home/mohitsharma/Documents/strategy-connect/data/hand_scored_30.json) containing 30 hand-scored answers against an explicit diligence rubric.
+  - Authored [`data/hand_scored_30.json`](data/hand_scored_30.json) containing 30 hand-scored answers against an explicit diligence rubric.
   - Each item contains binary human labels for `human_factual_accuracy`, `human_numerical_accuracy`, `human_citation_grounding`, and detailed qualitative notes.
   - Spans 10 pristine answers, 10 real corrupted analyst feedback examples (temporal swaps, magnitude errors, non-GAAP conflation, prompt injection), and 10 failure modes (hallucinated cells, ungrounded quotes, calculation errors).
   - Validated automated judge correlation:
@@ -106,8 +106,8 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
     - **Numerical Accuracy**: 90.0% accuracy ($\kappa=0.794$, Pearson $r=0.796$)
     - **Overall All-Pass**: 96.7% accuracy ($\kappa=0.933$, Pearson $r=0.935$)
 - **Where to Verify**:
-  - [`data/hand_scored_30.json`](file:///home/mohitsharma/Documents/strategy-connect/data/hand_scored_30.json)
-  - [`src/eval/scorer.py`](file:///home/mohitsharma/Documents/strategy-connect/src/eval/scorer.py#L270-L352)
+  - [`data/hand_scored_30.json`](data/hand_scored_30.json)
+  - [`src/eval/scorer.py`](src/eval/scorer.py#L270-L352)
 
 ---
 
@@ -127,13 +127,13 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 - **Root Cause in Original Submission**: A plotting script used idealized synthetic curves to illustrate theoretical failure modes instead of capturing empirical data from real loop executions.
 - **Engineering Fix Implemented**:
   - Removed all hardcoded plotting scripts.
-  - All plots generated by [`main.py`](file:///home/mohitsharma/Documents/strategy-connect/main.py#L290-L345) dynamically plot live empirical metrics from the 4-round learning loop and analyst reliability tracking directly from [`results/metrics.json`](file:///home/mohitsharma/Documents/strategy-connect/results/metrics.json).
+  - All plots generated by [`main.py`](main.py#L290-L345) dynamically plot live empirical metrics from the 4-round learning loop and analyst reliability tracking directly from [`results/metrics.json`](results/metrics.json).
   - Accurately demonstrates how an unconstrained agent accepting unverified feedback degrades under AN-01's prompt injections and magnitude errors, whereas the gated agent maintains 100% citation grounding and 100% held-out accuracy.
 - **Where to Verify**:
-  - [`main.py`](file:///home/mohitsharma/Documents/strategy-connect/main.py#L290-L345)
-  - [`results/metrics.json`](file:///home/mohitsharma/Documents/strategy-connect/results/metrics.json)
-  - [`results/plots/quality_vs_feedback_rounds.png`](file:///home/mohitsharma/Documents/strategy-connect/results/plots/quality_vs_feedback_rounds.png)
-  - [`results/plots/gaming_failure_comparison.png`](file:///home/mohitsharma/Documents/strategy-connect/results/plots/gaming_failure_comparison.png)
+  - [`main.py`](main.py#L290-L345)
+  - [`results/metrics.json`](results/metrics.json)
+  - [`results/plots/quality_vs_feedback_rounds.png`](results/plots/quality_vs_feedback_rounds.png)
+  - [`results/plots/gaming_failure_comparison.png`](results/plots/gaming_failure_comparison.png)
 
 ---
 
@@ -158,8 +158,8 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
     - **`AN-03` (Subtle Accounting Mistakes)**: 75.0% reliability (12/16 accepted, 4 rejected). Intercepted on receivables conflation, Non-GAAP conflation, and mismatched citations.
   - Overall Noise Interception Rate: **33.3% (16 corrupt items rejected out of 48)**.
 - **Where to Verify**:
-  - [`src/feedback/analyst_gate.py`](file:///home/mohitsharma/Documents/strategy-connect/src/feedback/analyst_gate.py#L45-L185)
-  - [`results/metrics.json`](file:///home/mohitsharma/Documents/strategy-connect/results/metrics.json) (under `"analyst_reliability"` and `"rejected_feedback_details"`)
+  - [`src/feedback/analyst_gate.py`](src/feedback/analyst_gate.py#L45-L185)
+  - [`results/metrics.json`](results/metrics.json) (under `"analyst_reliability"` and `"rejected_feedback_details"`)
 
 ---
 
@@ -190,8 +190,8 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
     - `AAPL-H04`: Diluted EPS ($8.98 vs $7.46)
   - Evaluated held-out performance at Round 0 (Baseline) and sequentially after every feedback round: zero regression observed, maintaining 100% grounding.
 - **Where to Verify**:
-  - [`main.py`](file:///home/mohitsharma/Documents/strategy-connect/main.py#L180-L215)
-  - [`data/sc-diligence/questions.json`](file:///home/mohitsharma/Documents/strategy-connect/data/sc-diligence/questions.json)
+  - [`main.py`](main.py#L180-L215)
+  - [`data/sc-diligence/questions.json`](data/sc-diligence/questions.json)
 
 ---
 
@@ -213,8 +213,8 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
   - Added dedicated logic for **negative assurance disclosures** ("No sales to an individual customer accounted for more than 10%").
   - Grounding check strictly verifies exact quote existence in `collapsed_text` and exact table cell lookups in `(table_row, column, value)` coordinate space.
 - **Where to Verify**:
-  - [`src/feedback/analyst_gate.py`](file:///home/mohitsharma/Documents/strategy-connect/src/feedback/analyst_gate.py#L110-L165)
-  - [`src/eval/scorer.py`](file:///home/mohitsharma/Documents/strategy-connect/src/eval/scorer.py#L20-L45)
+  - [`src/feedback/analyst_gate.py`](src/feedback/analyst_gate.py#L110-L165)
+  - [`src/eval/scorer.py`](src/eval/scorer.py#L20-L45)
 
 ---
 
@@ -234,11 +234,11 @@ Below is my point-by-point response to all 8 audit findings, documenting what wa
 - **Engineering Fix Implemented**:
   - Completely purged all company-specific keywords, brand names, and question-specific overrides from the codebase.
   - Replaced ad-hoc keyword lists with a standard US GAAP / SEC Regulation S-K financial taxonomy (e.g. `individual customer`, `concentration of credit risk`, `additions to property and equipment`, `share repurchase`, `effective tax rate`, `diluted earnings per share`) that generalizes universally across any unseen public company filing.
-  - Completely re-authored [`WRITEUP.md`](file:///home/mohitsharma/Documents/strategy-connect/WRITEUP.md) with complete transparency: every table, figure, and equation directly reflects the reproducible outputs from [`results/metrics.json`](file:///home/mohitsharma/Documents/strategy-connect/results/metrics.json).
+  - Completely re-authored [`WRITEUP.md`](WRITEUP.md) with complete transparency: every table, figure, and equation directly reflects the reproducible outputs from [`results/metrics.json`](results/metrics.json).
 - **Where to Verify**:
-  - [`src/agent/diligence_agent.py`](file:///home/mohitsharma/Documents/strategy-connect/src/agent/diligence_agent.py#L90-L160)
-  - [`WRITEUP.md`](file:///home/mohitsharma/Documents/strategy-connect/WRITEUP.md)
-  - [`README.md`](file:///home/mohitsharma/Documents/strategy-connect/README.md)
+  - [`src/agent/diligence_agent.py`](src/agent/diligence_agent.py#L90-L160)
+  - [`WRITEUP.md`](WRITEUP.md)
+  - [`README.md`](README.md)
 
 ---
 
