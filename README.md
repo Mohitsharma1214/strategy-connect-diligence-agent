@@ -56,7 +56,7 @@ Across 3 random seeds (`[42, 137, 2026]`) testing stochastic feedback order perm
 - **Local Open-Weights Execution**: `llama3.2:3b` via Ollama executes the 4-round pipeline in ~7.5 seconds at \$0.00 cost.
 
 ### Analyst Reliability & Forensic Audit
-The epistemic verification gate intercepted **17 out of 48 corrupt items (35.4% noise rejection rate)** while quarantining low-trust submissions for review:
+The epistemic verification gate rejected **17 out of 48 corrupt items (35.4% noise rejection rate)** while quarantining 4 low-trust submissions for partner review (31 accepted = 27 cleared directly into playbooks + 4 quarantined):
 
 | Analyst ID | Total Items | Accepted | Rejected | Empirical Reliability | Primary Failure Modes |
 | :---: | :---: | :---: | :---: | :---: | :--- |
